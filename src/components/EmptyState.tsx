@@ -34,7 +34,7 @@ const EmptyState = ({ onUploadClick }: { onUploadClick: () => void }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.5 }}
       >
-        WhatsApp sohbet dışa aktarım dosyanızı (.txt) yükleyin. Verileriniz sadece tarayıcınızda işlenir ve hiçbir yere gönderilmez.
+        WhatsApp sohbet dışa aktarım dosyanızı (.txt veya .zip) yükleyin. Verileriniz sadece tarayıcınızda işlenir ve hiçbir yere gönderilmez.
       </motion.p>
       
       <motion.button

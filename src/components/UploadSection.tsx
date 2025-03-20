@@ -3,6 +3,7 @@ import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Upload, X, AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import JSZip from 'jszip';
 
 interface UploadSectionProps {
   onFileProcessed: (content: string) => void;
@@ -36,59 +37,89 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
     setIsDragging(false);
     
     const items = e.dataTransfer.items;
-    let zipFile: File | null = null;
+    let droppedFile: File | null = null;
     
-    // Check for zip files
     for (let i = 0; i < items.length; i++) {
       if (items[i].kind === 'file') {
         const item = items[i].getAsFile();
-        if (item && item.name.endsWith('.zip')) {
-          zipFile = item;
+        if (item && (item.name.endsWith('.zip') || item.name.endsWith('.txt'))) {
+          droppedFile = item;
           break;
         }
       }
     }
     
-    if (zipFile) {
-      processFile(zipFile);
+    if (droppedFile) {
+      processFile(droppedFile);
     } else {
-      toast.error("Lütfen .zip uzantılı dosya yükleyin");
+      toast.error("Lütfen .zip veya .txt uzantılı dosya yükleyin");
     }
   };
 
   const processFile = async (selectedFile: File) => {
-    if (!selectedFile.name.endsWith('.zip')) {
-      toast.error("Lütfen .zip uzantılı dosya yükleyin");
-      return;
-    }
-    
     setIsLoading(true);
     setFile(selectedFile);
     
     try {
-      // For demonstration, we'll just read the file
-      // In a real app, we would extract the zip and find the .txt file
-      // For now, just simulate reading the file
-      setTimeout(() => {
-        // Simulate chat content (this would actually come from the zip extraction)
-        const simulatedContent = `23.05.2023 15:30 - Ahmet: Merhaba, nasılsın?
-23.05.2023 15:32 - Mehmet: İyiyim, sen nasılsın?
-23.05.2023 15:33 - Ahmet: Ben de iyiyim, teşekkürler!
-23.05.2023 15:35 - Mehmet: Bugün planların neler?
-23.05.2023 15:38 - Ahmet: Akşam bir film izleyeceğim 🎬
-23.05.2023 15:40 - Mehmet: Hangi film? 🤔
-23.05.2023 15:42 - Ahmet: Inception düşünüyorum
-23.05.2023 15:45 - Mehmet: Harika bir seçim! 👍`;
-        
-        onFileProcessed(simulatedContent);
-        setIsLoading(false);
+      if (selectedFile.name.endsWith('.txt')) {
+        // If it's a direct text file, read it
+        const content = await readTextFile(selectedFile);
+        onFileProcessed(content);
         toast.success("Dosya başarıyla işlendi");
-      }, 2000);
+      } else if (selectedFile.name.endsWith('.zip')) {
+        // If it's a zip, extract and find txt file
+        const zip = new JSZip();
+        const zipContent = await zip.loadAsync(selectedFile);
+        
+        // Find all text files in the zip
+        const textFiles = Object.keys(zipContent.files).filter(filename => 
+          filename.endsWith('.txt') && !zipContent.files[filename].dir
+        );
+        
+        if (textFiles.length === 0) {
+          throw new Error("Zip dosyasında WhatsApp sohbet metni bulunamadı");
+        }
+        
+        // Use the first text file (usually there's only one)
+        const textFile = textFiles[0];
+        const content = await zipContent.files[textFile].async('string');
+        
+        // Some encoding fixes for Turkish characters if needed
+        const processedContent = content
+          .replace(/Ã¼/g, 'ü')
+          .replace(/Ã§/g, 'ç')
+          .replace(/ÅŸ/g, 'ş')
+          .replace(/Ä±/g, 'ı')
+          .replace(/Ã¶/g, 'ö')
+          .replace(/ÄŸ/g, 'ğ')
+          .replace(/Ä°/g, 'İ');
+        
+        onFileProcessed(processedContent);
+        toast.success("WhatsApp sohbeti başarıyla işlendi");
+      } else {
+        throw new Error("Desteklenmeyen dosya formatı");
+      }
     } catch (error) {
       console.error(error);
-      toast.error("Dosya işlenirken bir hata oluştu");
+      toast.error(error instanceof Error ? error.message : "Dosya işlenirken bir hata oluştu");
+    } finally {
       setIsLoading(false);
     }
+  };
+
+  const readTextFile = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          resolve(e.target.result as string);
+        } else {
+          reject(new Error("Dosya okunamadı"));
+        }
+      };
+      reader.onerror = () => reject(new Error("Dosya okuma hatası"));
+      reader.readAsText(file);
+    });
   };
 
   const handleButtonClick = () => {
@@ -113,7 +144,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept=".zip"
+        accept=".zip,.txt"
         className="hidden"
         aria-label="Dosya yükle"
       />
@@ -136,7 +167,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
               <Upload className="h-10 w-10 text-muted-foreground mb-4" />
               <h3 className="font-display font-medium text-lg mb-2">WhatsApp Sohbet Dosyanızı Yükleyin</h3>
               <p className="text-muted-foreground mb-6 text-sm max-w-md">
-                Sohbetinizin .zip dosyasını sürükleyip bırakın veya bilgisayarınızdan seçin
+                Sohbetinizin .zip veya .txt dosyasını sürükleyip bırakın veya bilgisayarınızdan seçin
               </p>
               
               <button

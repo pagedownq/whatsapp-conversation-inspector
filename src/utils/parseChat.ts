@@ -16,13 +16,15 @@ export interface ChatMessage {
 // Format: [date, time] sender: message
 const messageRegex = /(\d{1,2}[./]\d{1,2}[./]\d{2,4})[,\s]+(\d{1,2}:\d{2})(?:\s*-\s*|\s+)([^:]+):\s*(.*)/;
 
-// Simple emoji detection regex (this is a simplified version)
-const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u;
+// Emoji detection regex (fixed version)
+const emojiRegex = new RegExp('[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]', 'ug');
 
 /**
  * Parse WhatsApp chat text into structured message objects
  */
 export function parseChat(chatText: string): ChatMessage[] {
+  console.log("Parsing chat with length:", chatText.length);
+  
   const lines = chatText.split('\n');
   const messages: ChatMessage[] = [];
   let currentMessage: ChatMessage | null = null;
@@ -40,11 +42,11 @@ export function parseChat(chatText: string): ChatMessage[] {
       const [_, date, time, sender, content] = match;
       
       // Count emojis
-      const emojis = (content.match(new RegExp(emojiRegex, 'g')) || []);
+      const emojis = (content.match(emojiRegex) || []);
       const emojiCount = emojis.length;
       
       // Count words (excluding emojis)
-      const contentWithoutEmojis = content.replace(new RegExp(emojiRegex, 'g'), '');
+      const contentWithoutEmojis = content.replace(emojiRegex, '');
       const wordCount = contentWithoutEmojis.split(/\s+/).filter(word => word.trim() !== '').length;
       
       // Create new message object
@@ -64,10 +66,10 @@ export function parseChat(chatText: string): ChatMessage[] {
       currentMessage.content += '\n' + line;
       
       // Update counts
-      const emojis = (line.match(new RegExp(emojiRegex, 'g')) || []);
+      const emojis = (line.match(emojiRegex) || []);
       currentMessage.emojiCount += emojis.length;
       
-      const lineWithoutEmojis = line.replace(new RegExp(emojiRegex, 'g'), '');
+      const lineWithoutEmojis = line.replace(emojiRegex, '');
       currentMessage.wordCount += lineWithoutEmojis.split(/\s+/).filter(word => word.trim() !== '').length;
       currentMessage.characterCount += line.length;
       currentMessage.hasEmoji = currentMessage.emojiCount > 0;
@@ -79,6 +81,7 @@ export function parseChat(chatText: string): ChatMessage[] {
     messages.push(currentMessage);
   }
   
+  console.log(`Parsed ${messages.length} messages`);
   return messages;
 }
 
@@ -99,6 +102,6 @@ export function getParticipants(messages: ChatMessage[]): string[] {
  * Extract all emojis from a message
  */
 export function extractEmojis(text: string): string[] {
-  const matches = text.match(new RegExp(emojiRegex, 'g'));
+  const matches = text.match(emojiRegex);
   return matches || [];
 }

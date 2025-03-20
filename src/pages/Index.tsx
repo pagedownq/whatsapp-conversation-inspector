@@ -1,18 +1,22 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import EmptyState from '@/components/EmptyState';
 import UploadSection from '@/components/UploadSection';
 import AnalysisDisplay from '@/components/AnalysisDisplay';
 import { parseChat, ChatMessage } from '@/utils/parseChat';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Button } from '@/components/ui/button';
+import { MessageSquare } from 'lucide-react';
 
 const Index = () => {
   const [uploadMode, setUploadMode] = useState<boolean>(true);
   const [uploadVisible, setUploadVisible] = useState<boolean>(false);
   const [parsedMessages, setParsedMessages] = useState<ChatMessage[]>([]);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   const handleFileProcessed = (content: string) => {
     const messages = parseChat(content);
@@ -28,6 +32,10 @@ const Index = () => {
     setParsedMessages([]);
     setUploadMode(true);
     setUploadVisible(false);
+  };
+
+  const handleViewChatClick = () => {
+    navigate('/chat', { state: { messages: parsedMessages } });
   };
 
   return (
@@ -51,10 +59,30 @@ const Index = () => {
             )}
           </>
         ) : (
-          <AnalysisDisplay 
-            chatData={parsedMessages}
-            onReset={handleReset}
-          />
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-3xl font-bold tracking-tight">Chat Analysis</h2>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleViewChatClick}
+                  className="flex items-center gap-2"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  View Chat
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleReset}
+                >
+                  Upload New Chat
+                </Button>
+              </div>
+            </div>
+            <AnalysisDisplay 
+              chatData={parsedMessages}
+              onReset={handleReset}
+            />
+          </>
         )}
       </main>
       

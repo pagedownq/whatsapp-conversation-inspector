@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Line, LineChart } from 'recharts';
@@ -13,7 +12,33 @@ interface AnalysisDisplayProps {
   onReset: () => void;
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A259FF'];
+interface StatsCardProps {
+  icon: React.ReactNode;
+  title: string;
+  value: number;
+  suffix?: string;
+}
+
+const StatsCard: React.FC<StatsCardProps> = ({ icon, title, value, suffix = '' }) => {
+  const animatedValue = useCountAnimation(value);
+  
+  return (
+    <motion.div 
+      className="bg-card rounded-2xl p-5 shadow-soft"
+      whileHover={{ y: -3, transition: { duration: 0.2 } }}
+    >
+      <div className="flex items-center mb-1">
+        <div className="bg-primary/10 p-1.5 rounded-full mr-2">
+          {icon}
+        </div>
+        <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+      </div>
+      <p className="text-2xl font-display font-semibold tracking-tight">
+        {new Intl.NumberFormat('tr-TR').format(animatedValue)}{suffix}
+      </p>
+    </motion.div>
+  );
+};
 
 const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) => {
   const [stats, setStats] = useState<ChatStats | null>(null);
@@ -49,7 +74,9 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
         console.error('Error analyzing chat:', error);
       }
     }
-  }, [chatData]);
+  }, [chatData, selectedParticipant]);
+  
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A259FF'];
   
   if (!stats) {
     return (
@@ -147,22 +174,22 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                 <StatsCard 
                   icon={<MessageSquare className="h-5 w-5" />}
                   title="Toplam Mesaj"
-                  value={useCountAnimation(stats.totalMessages)}
+                  value={stats.totalMessages}
                 />
                 <StatsCard 
                   icon={<Type className="h-5 w-5" />}
                   title="Toplam Kelime"
-                  value={useCountAnimation(stats.totalWords)}
+                  value={stats.totalWords}
                 />
                 <StatsCard 
                   icon={<Smile className="h-5 w-5" />}
                   title="Toplam Emoji"
-                  value={useCountAnimation(stats.totalEmojis)}
+                  value={stats.totalEmojis}
                 />
                 <StatsCard 
                   icon={<Calendar className="h-5 w-5" />}
                   title="Sohbet Süresi"
-                  value={useCountAnimation(stats.duration)}
+                  value={stats.duration}
                   suffix=" gün"
                 />
               </div>
@@ -304,22 +331,22 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                     <StatsCard 
                       icon={<MessageSquare className="h-5 w-5" />}
                       title="Mesaj Sayısı"
-                      value={useCountAnimation(stats.participantStats[selectedParticipant].messageCount)}
+                      value={stats.participantStats[selectedParticipant].messageCount}
                     />
                     <StatsCard 
                       icon={<Type className="h-5 w-5" />}
                       title="Kelime Sayısı"
-                      value={useCountAnimation(stats.participantStats[selectedParticipant].wordCount)}
+                      value={stats.participantStats[selectedParticipant].wordCount}
                     />
                     <StatsCard 
                       icon={<Smile className="h-5 w-5" />}
                       title="Emoji Sayısı"
-                      value={useCountAnimation(stats.participantStats[selectedParticipant].emojiCount)}
+                      value={stats.participantStats[selectedParticipant].emojiCount}
                     />
                     <StatsCard 
                       icon={<Activity className="h-5 w-5" />}
                       title="Ort. Mesaj Uzunluğu"
-                      value={useCountAnimation(Math.round(stats.participantStats[selectedParticipant].averageMessageLength))}
+                      value={Math.round(stats.participantStats[selectedParticipant].averageMessageLength)}
                       suffix=" karakter"
                     />
                   </div>
@@ -513,32 +540,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
           <span>Yeni Analiz</span>
         </button>
       </div>
-    </motion.div>
-  );
-};
-
-interface StatsCardProps {
-  icon: React.ReactNode;
-  title: string;
-  value: number;
-  suffix?: string;
-}
-
-const StatsCard: React.FC<StatsCardProps> = ({ icon, title, value, suffix = '' }) => {
-  return (
-    <motion.div 
-      className="bg-card rounded-2xl p-5 shadow-soft"
-      whileHover={{ y: -3, transition: { duration: 0.2 } }}
-    >
-      <div className="flex items-center mb-1">
-        <div className="bg-primary/10 p-1.5 rounded-full mr-2">
-          {icon}
-        </div>
-        <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
-      </div>
-      <p className="text-2xl font-display font-semibold tracking-tight">
-        {new Intl.NumberFormat('tr-TR').format(value)}{suffix}
-      </p>
     </motion.div>
   );
 };

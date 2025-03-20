@@ -94,14 +94,21 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
           .replace(/ÄŸ/g, 'ğ')
           .replace(/Ä°/g, 'İ');
         
+        console.log("Processed ZIP content length:", processedContent.length);
+        
+        if (processedContent.trim() === '') {
+          throw new Error("Zip içindeki dosya boş veya okunamadı");
+        }
+        
         onFileProcessed(processedContent);
         toast.success("WhatsApp sohbeti başarıyla işlendi");
       } else {
         throw new Error("Desteklenmeyen dosya formatı");
       }
     } catch (error) {
-      console.error(error);
+      console.error("File processing error:", error);
       toast.error(error instanceof Error ? error.message : "Dosya işlenirken bir hata oluştu");
+      setFile(null);
     } finally {
       setIsLoading(false);
     }

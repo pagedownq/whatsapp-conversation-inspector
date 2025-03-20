@@ -25,64 +25,74 @@ const emojiRegex = new RegExp('[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-
 export function parseChat(chatText: string): ChatMessage[] {
   console.log("Parsing chat with length:", chatText.length);
   
-  const lines = chatText.split('\n');
-  const messages: ChatMessage[] = [];
-  let currentMessage: ChatMessage | null = null;
+  if (!chatText || chatText.trim() === '') {
+    console.error("Empty chat text provided");
+    return [];
+  }
   
-  for (const line of lines) {
-    const match = line.match(messageRegex);
+  try {
+    const lines = chatText.split('\n');
+    const messages: ChatMessage[] = [];
+    let currentMessage: ChatMessage | null = null;
     
-    if (match) {
-      // If we have a current message, add it to the messages array
-      if (currentMessage) {
-        messages.push(currentMessage);
+    for (const line of lines) {
+      const match = line.match(messageRegex);
+      
+      if (match) {
+        // If we have a current message, add it to the messages array
+        if (currentMessage) {
+          messages.push(currentMessage);
+        }
+        
+        // Extract date, time, sender and content
+        const [_, date, time, sender, content] = match;
+        
+        // Count emojis
+        const emojis = (content.match(emojiRegex) || []);
+        const emojiCount = emojis.length;
+        
+        // Count words (excluding emojis)
+        const contentWithoutEmojis = content.replace(emojiRegex, '');
+        const wordCount = contentWithoutEmojis.split(/\s+/).filter(word => word.trim() !== '').length;
+        
+        // Create new message object
+        currentMessage = {
+          timestamp: `${date} ${time}`,
+          date,
+          time,
+          sender: sender.trim(),
+          content,
+          hasEmoji: emojiCount > 0,
+          emojiCount,
+          wordCount,
+          characterCount: content.length
+        };
+      } else if (currentMessage) {
+        // This line is a continuation of the previous message
+        currentMessage.content += '\n' + line;
+        
+        // Update counts
+        const emojis = (line.match(emojiRegex) || []);
+        currentMessage.emojiCount += emojis.length;
+        
+        const lineWithoutEmojis = line.replace(emojiRegex, '');
+        currentMessage.wordCount += lineWithoutEmojis.split(/\s+/).filter(word => word.trim() !== '').length;
+        currentMessage.characterCount += line.length;
+        currentMessage.hasEmoji = currentMessage.emojiCount > 0;
       }
-      
-      // Extract date, time, sender and content
-      const [_, date, time, sender, content] = match;
-      
-      // Count emojis
-      const emojis = (content.match(emojiRegex) || []);
-      const emojiCount = emojis.length;
-      
-      // Count words (excluding emojis)
-      const contentWithoutEmojis = content.replace(emojiRegex, '');
-      const wordCount = contentWithoutEmojis.split(/\s+/).filter(word => word.trim() !== '').length;
-      
-      // Create new message object
-      currentMessage = {
-        timestamp: `${date} ${time}`,
-        date,
-        time,
-        sender: sender.trim(),
-        content,
-        hasEmoji: emojiCount > 0,
-        emojiCount,
-        wordCount,
-        characterCount: content.length
-      };
-    } else if (currentMessage) {
-      // This line is a continuation of the previous message
-      currentMessage.content += '\n' + line;
-      
-      // Update counts
-      const emojis = (line.match(emojiRegex) || []);
-      currentMessage.emojiCount += emojis.length;
-      
-      const lineWithoutEmojis = line.replace(emojiRegex, '');
-      currentMessage.wordCount += lineWithoutEmojis.split(/\s+/).filter(word => word.trim() !== '').length;
-      currentMessage.characterCount += line.length;
-      currentMessage.hasEmoji = currentMessage.emojiCount > 0;
     }
+    
+    // Add the last message if there is one
+    if (currentMessage) {
+      messages.push(currentMessage);
+    }
+    
+    console.log(`Parsed ${messages.length} messages`);
+    return messages;
+  } catch (error) {
+    console.error("Error parsing chat:", error);
+    return [];
   }
-  
-  // Add the last message if there is one
-  if (currentMessage) {
-    messages.push(currentMessage);
-  }
-  
-  console.log(`Parsed ${messages.length} messages`);
-  return messages;
 }
 
 /**

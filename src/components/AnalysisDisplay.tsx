@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Line, LineChart } from 'recharts';
 import { useCountAnimation, useProgressAnimation } from '@/hooks/useAnimation';
 import { ChatMessage } from '@/utils/parseChat';
 import { analyzeChat, ChatStats, ParticipantStats } from '@/utils/analyzeChat';
-import { Clock, MessageSquare, Type, Smile, User, Calendar, Activity, BarChart2 } from 'lucide-react';
+import { Clock, MessageSquare, Type, Smile, User, Calendar, Activity, BarChart2, Image, Video, FileText, Link, StickerIcon, Film, Mic, AlignJustify } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AnalysisDisplayProps {
@@ -40,9 +41,26 @@ const StatsCard: React.FC<StatsCardProps> = ({ icon, title, value, suffix = '' }
   );
 };
 
+const MediaStatsCard: React.FC<{
+  title: string;
+  icon: React.ReactNode;
+  value: number;
+  color: string;
+}> = ({ title, icon, value, color }) => {
+  return (
+    <div className="bg-secondary/50 rounded-xl p-4 flex flex-col items-center">
+      <div className="rounded-full p-2 mb-2" style={{ backgroundColor: `${color}20` }}>
+        <div style={{ color }}>{icon}</div>
+      </div>
+      <div className="text-lg font-medium">{value}</div>
+      <div className="text-xs text-muted-foreground">{title}</div>
+    </div>
+  );
+};
+
 const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) => {
   const [stats, setStats] = useState<ChatStats | null>(null);
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'participants' | 'timeline'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'participants' | 'timeline' | 'media'>('overview');
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
   const [participantColors, setParticipantColors] = useState<Record<string, string>>({});
   const isMobile = useIsMobile();
@@ -117,6 +135,28 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
     hour: `${hour}:00`,
     count: stats.messagesByHour[hour] || 0
   }));
+  
+  // Format media data
+  const mediaData = [
+    { name: 'Fotoğraflar', value: stats.mediaStats.images, icon: <Image className="h-5 w-5" />, color: '#4CAF50' },
+    { name: 'Videolar', value: stats.mediaStats.videos, icon: <Video className="h-5 w-5" />, color: '#FFC107' },
+    { name: 'Belgeler', value: stats.mediaStats.documents, icon: <FileText className="h-5 w-5" />, color: '#2196F3' },
+    { name: 'Linkler', value: stats.mediaStats.links, icon: <Link className="h-5 w-5" />, color: '#9C27B0' },
+    { name: 'Çıkartmalar', value: stats.mediaStats.stickers, icon: <StickerIcon className="h-5 w-5" />, color: '#FF5722' },
+    { name: 'GIFler', value: stats.mediaStats.gifs, icon: <Film className="h-5 w-5" />, color: '#795548' },
+    { name: 'Sesler', value: stats.mediaStats.audio, icon: <Mic className="h-5 w-5" />, color: '#607D8B' }
+  ];
+  
+  // Participant media data
+  const getParticipantMediaData = (participant: string) => [
+    { name: 'Fotoğraflar', value: stats.participantStats[participant].mediaStats.images },
+    { name: 'Videolar', value: stats.participantStats[participant].mediaStats.videos },
+    { name: 'Belgeler', value: stats.participantStats[participant].mediaStats.documents },
+    { name: 'Linkler', value: stats.participantStats[participant].mediaStats.links },
+    { name: 'Çıkartmalar', value: stats.participantStats[participant].mediaStats.stickers },
+    { name: 'GIFler', value: stats.participantStats[participant].mediaStats.gifs },
+    { name: 'Sesler', value: stats.participantStats[participant].mediaStats.audio }
+  ];
 
   return (
     <motion.div 
@@ -156,6 +196,16 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
           } btn-transition`}
         >
           Zaman Çizelgesi
+        </button>
+        <button
+          onClick={() => setSelectedTab('media')}
+          className={`px-4 py-2 rounded-full whitespace-nowrap ${
+            selectedTab === 'media' 
+              ? 'bg-primary text-primary-foreground shadow-soft' 
+              : 'bg-secondary hover:bg-secondary/80'
+          } btn-transition`}
+        >
+          Medya Analizi
         </button>
       </div>
       
@@ -374,6 +424,38 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                     </div>
                   </div>
                   
+                  {/* Longest message */}
+                  <div className="bg-card rounded-2xl p-6 shadow-soft">
+                    <h3 className="text-lg font-medium mb-4">En Uzun Mesaj</h3>
+                    <div className="bg-secondary/30 rounded-xl p-4 break-words">
+                      <div className="flex items-center mb-2">
+                        <AlignJustify className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">
+                          {stats.participantStats[selectedParticipant].longestMessage.length} karakter
+                        </span>
+                      </div>
+                      <p className="text-sm">
+                        {stats.participantStats[selectedParticipant].longestMessage.content || 'Mesaj bulunamadı'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Media stats */}
+                  <div className="bg-card rounded-2xl p-6 shadow-soft">
+                    <h3 className="text-lg font-medium mb-4">Medya Paylaşımları</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {getParticipantMediaData(selectedParticipant).map((item, index) => (
+                        <div 
+                          key={index}
+                          className="bg-secondary/50 rounded-xl p-4 text-center"
+                        >
+                          <div className="text-xl font-medium">{item.value}</div>
+                          <div className="text-xs text-muted-foreground">{item.name}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
                   {/* Response time */}
                   <div className="bg-card rounded-2xl p-6 shadow-soft">
                     <h3 className="text-lg font-medium mb-4">Yanıt Süresi</h3>
@@ -382,7 +464,7 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                       <div className="bg-secondary/50 rounded-xl p-4">
                         <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Ortalama</div>
                         <div className="text-2xl font-medium">
-                          {stats.participantStats[selectedParticipant].responseTime.average 
+                          {stats.participantStats[selectedParticipant].responseTime.average !== null
                             ? `${Math.round(stats.participantStats[selectedParticipant].responseTime.average)} dk` 
                             : 'Veri yok'}
                         </div>
@@ -391,7 +473,7 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                       <div className="bg-secondary/50 rounded-xl p-4">
                         <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">En Hızlı</div>
                         <div className="text-2xl font-medium">
-                          {stats.participantStats[selectedParticipant].responseTime.fastest 
+                          {stats.participantStats[selectedParticipant].responseTime.fastest !== null
                             ? `${Math.round(stats.participantStats[selectedParticipant].responseTime.fastest)} dk` 
                             : 'Veri yok'}
                         </div>
@@ -400,7 +482,7 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                       <div className="bg-secondary/50 rounded-xl p-4">
                         <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">En Yavaş</div>
                         <div className="text-2xl font-medium">
-                          {stats.participantStats[selectedParticipant].responseTime.slowest 
+                          {stats.participantStats[selectedParticipant].responseTime.slowest !== null
                             ? `${Math.round(stats.participantStats[selectedParticipant].responseTime.slowest)} dk` 
                             : 'Veri yok'}
                         </div>
@@ -523,7 +605,145 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                         <div className="font-medium">{stats.endDate}</div>
                       </div>
                     </div>
+                    
+                    <div className="flex items-center mt-4">
+                      <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10 mr-4">
+                        <Clock className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <div className="text-sm text-muted-foreground">Toplam Süre</div>
+                        <div className="font-medium">{stats.duration} gün</div>
+                      </div>
+                    </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {selectedTab === 'media' && (
+            <div className="space-y-6">
+              {/* Media overview */}
+              <div className="bg-card rounded-2xl p-6 shadow-soft">
+                <h3 className="text-lg font-medium mb-4">Medya Genel Bakış</h3>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-6">
+                  <MediaStatsCard 
+                    title="Fotoğraflar" 
+                    icon={<Image className="h-5 w-5" />} 
+                    value={stats.mediaStats.images} 
+                    color="#4CAF50"
+                  />
+                  <MediaStatsCard 
+                    title="Videolar" 
+                    icon={<Video className="h-5 w-5" />} 
+                    value={stats.mediaStats.videos} 
+                    color="#FFC107"
+                  />
+                  <MediaStatsCard 
+                    title="Belgeler" 
+                    icon={<FileText className="h-5 w-5" />} 
+                    value={stats.mediaStats.documents}
+                    color="#2196F3" 
+                  />
+                  <MediaStatsCard 
+                    title="Linkler" 
+                    icon={<Link className="h-5 w-5" />} 
+                    value={stats.mediaStats.links} 
+                    color="#9C27B0"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+                  <MediaStatsCard 
+                    title="Çıkartmalar" 
+                    icon={<StickerIcon className="h-5 w-5" />} 
+                    value={stats.mediaStats.stickers} 
+                    color="#FF5722"
+                  />
+                  <MediaStatsCard 
+                    title="GIFler" 
+                    icon={<Film className="h-5 w-5" />} 
+                    value={stats.mediaStats.gifs} 
+                    color="#795548"
+                  />
+                  <MediaStatsCard 
+                    title="Sesler" 
+                    icon={<Mic className="h-5 w-5" />} 
+                    value={stats.mediaStats.audio} 
+                    color="#607D8B"
+                  />
+                </div>
+              </div>
+              
+              {/* Media comparison */}
+              <div className="bg-card rounded-2xl p-6 shadow-soft">
+                <h3 className="text-lg font-medium mb-4">Medya Karşılaştırma</h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={mediaData}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip formatter={(value: any) => [`${value} adet`, '']} />
+                      <Bar 
+                        dataKey="value" 
+                        animationBegin={0}
+                        animationDuration={1500}
+                        animationEasing="ease-out"
+                      >
+                        {mediaData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={entry.color} 
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              
+              {/* Media distribution by participant */}
+              <div className="bg-card rounded-2xl p-6 shadow-soft">
+                <h3 className="text-lg font-medium mb-4">Katılımcı Bazında Medya Dağılımı</h3>
+                
+                <div className="grid gap-6">
+                  {Object.entries(stats.participantStats).map(([name, participantStats]) => (
+                    <div key={name} className="border border-border/30 rounded-xl p-4">
+                      <div className="flex items-center mb-4">
+                        <div 
+                          className="w-4 h-4 rounded-full mr-2" 
+                          style={{ backgroundColor: participantColors[name] }}
+                        ></div>
+                        <h4 className="font-medium">{name}</h4>
+                        <div className="ml-auto text-sm text-muted-foreground">
+                          Toplam: {participantStats.mediaCount} medya
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                        <div className="flex justify-between bg-secondary/30 p-2 rounded-lg">
+                          <span>Fotoğraflar:</span>
+                          <span className="font-medium">{participantStats.mediaStats.images}</span>
+                        </div>
+                        <div className="flex justify-between bg-secondary/30 p-2 rounded-lg">
+                          <span>Videolar:</span>
+                          <span className="font-medium">{participantStats.mediaStats.videos}</span>
+                        </div>
+                        <div className="flex justify-between bg-secondary/30 p-2 rounded-lg">
+                          <span>Belgeler:</span>
+                          <span className="font-medium">{participantStats.mediaStats.documents}</span>
+                        </div>
+                        <div className="flex justify-between bg-secondary/30 p-2 rounded-lg">
+                          <span>Linkler:</span>
+                          <span className="font-medium">{participantStats.mediaStats.links}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

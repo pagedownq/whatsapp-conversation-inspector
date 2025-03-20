@@ -1,6 +1,17 @@
 
 import { ChatMessage, getParticipants } from './parseChat';
 
+export interface MediaStats {
+  total: number;
+  images: number;
+  videos: number;
+  documents: number;
+  links: number;
+  stickers: number;
+  gifs: number;
+  audio: number;
+}
+
 export interface ParticipantStats {
   name: string;
   messageCount: number;
@@ -10,8 +21,12 @@ export interface ParticipantStats {
   uniqueEmojis: Set<string>;
   topEmojis: Array<{emoji: string, count: number}>;
   averageMessageLength: number;
-  longestMessage: number;
+  longestMessage: {
+    content: string;
+    length: number;
+  };
   mediaCount: number;
+  mediaStats: MediaStats;
   responseTime: {
     average: number | null;
     fastest: number | null;
@@ -33,6 +48,7 @@ export interface ChatStats {
   mostActiveHour: number;
   messagesByDate: Record<string, number>;
   messagesByHour: Record<number, number>;
+  mediaStats: MediaStats;
 }
 
 /**
@@ -66,23 +82,106 @@ function getTopEmojis(emojiMap: Map<string, number>, n: number = 5): Array<{emoj
 }
 
 /**
- * Check if a message contains media
+ * Calculate the duration between two dates in days
  */
-function containsMedia(message: ChatMessage): boolean {
-  const mediaIndicators = [
-    '<Media omitted>',
-    '<Media excluded>',
-    '(file attached)',
-    'image omitted',
-    'video omitted',
-    'audio omitted',
-    'sticker omitted',
-    'GIF omitted'
-  ];
+function calculateDurationInDays(startDate: string, endDate: string): number {
+  // Convert DD.MM.YYYY or DD/MM/YYYY to MM/DD/YYYY for proper parsing
+  const formatDateForParsing = (dateStr: string) => {
+    // First normalize separators to a standard format (.)
+    const normalized = dateStr.replace(/[/\-]/g, '.');
+    const parts = normalized.split('.');
+    
+    // Check if we have a 2-digit year and convert to 4-digit
+    if (parts.length === 3 && parts[2].length === 2) {
+      const year = parseInt(parts[2]);
+      // Assume 20xx for years less than 50, 19xx for years 50+
+      parts[2] = (year < 50 ? '20' : '19') + parts[2];
+    }
+    
+    // Convert DD.MM.YYYY to MM/DD/YYYY format for Date parsing
+    if (parts.length === 3) {
+      return `${parts[1]}/${parts[0]}/${parts[2]}`;
+    }
+    
+    return dateStr; // Return original if we can't parse it
+  };
   
-  return mediaIndicators.some(indicator => 
-    message.content.toLowerCase().includes(indicator.toLowerCase())
-  );
+  try {
+    const start = new Date(formatDateForParsing(startDate));
+    const end = new Date(formatDateForParsing(endDate));
+    
+    // Calculate the difference in milliseconds and convert to days
+    const diffInMs = Math.abs(end.getTime() - start.getTime());
+    const diffInDays = Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
+    
+    // Return at least 1 day if the chat happened on the same day
+    return Math.max(diffInDays, 1);
+  } catch (error) {
+    console.error("Error calculating duration:", error);
+    return 1; // Return 1 day as fallback
+  }
+}
+
+/**
+ * Calculate response time between messages from different participants
+ */
+function calculateResponseTimes(messages: ChatMessage[]): Record<string, number[]> {
+  const responseTimes: Record<string, number[]> = {};
+  
+  // Initialize response times array for each participant
+  const participants = new Set<string>();
+  messages.forEach(m => participants.add(m.sender));
+  participants.forEach(p => {
+    responseTimes[p] = [];
+  });
+  
+  // Calculate response times
+  for (let i = 1; i < messages.length; i++) {
+    const currentMessage = messages[i];
+    const prevMessage = messages[i - 1];
+    
+    // Only calculate if the sender is different (it's a response)
+    if (currentMessage.sender !== prevMessage.sender) {
+      try {
+        const prevTime = new Date(formatDateTimeForParsing(prevMessage.date, prevMessage.time)).getTime();
+        const currTime = new Date(formatDateTimeForParsing(currentMessage.date, currentMessage.time)).getTime();
+        
+        // Calculate difference in minutes
+        const responseTime = (currTime - prevTime) / (1000 * 60);
+        
+        // Only include reasonable response times (less than 24 hours)
+        if (responseTime > 0 && responseTime < 24 * 60) {
+          responseTimes[currentMessage.sender].push(responseTime);
+        }
+      } catch (error) {
+        console.error("Error calculating response time:", error);
+      }
+    }
+  }
+  
+  return responseTimes;
+}
+
+/**
+ * Format date and time for parsing
+ */
+function formatDateTimeForParsing(date: string, time: string): string {
+  // Convert DD.MM.YYYY or DD/MM/YYYY to MM/DD/YYYY for proper parsing
+  const normalized = date.replace(/[/\-]/g, '.');
+  const parts = normalized.split('.');
+  
+  if (parts.length === 3) {
+    // Handle 2-digit years
+    if (parts[2].length === 2) {
+      const year = parseInt(parts[2]);
+      parts[2] = (year < 50 ? '20' : '19') + parts[2];
+    }
+    
+    // Convert DD.MM.YYYY to MM/DD/YYYY format for Date parsing
+    return `${parts[1]}/${parts[0]}/${parts[2]} ${time}`;
+  }
+  
+  return `${date} ${time}`; // Return original format if we can't parse it
 }
 
 /**
@@ -95,14 +194,14 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
   
   // Sort messages by timestamp
   const sortedMessages = [...messages].sort((a, b) => {
-    return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+    const dateA = new Date(formatDateTimeForParsing(a.date, a.time));
+    const dateB = new Date(formatDateTimeForParsing(b.date, b.time));
+    return dateA.getTime() - dateB.getTime();
   });
   
   const startDate = sortedMessages[0].date;
   const endDate = sortedMessages[sortedMessages.length - 1].date;
-  const startTime = new Date(sortedMessages[0].timestamp).getTime();
-  const endTime = new Date(sortedMessages[sortedMessages.length - 1].timestamp).getTime();
-  const durationDays = Math.ceil((endTime - startTime) / (1000 * 60 * 60 * 24));
+  const durationDays = calculateDurationInDays(startDate, endDate);
   
   // Initialize overall stats
   const participants = getParticipants(sortedMessages);
@@ -118,8 +217,21 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
       uniqueEmojis: new Set<string>(),
       topEmojis: [],
       averageMessageLength: 0,
-      longestMessage: 0,
+      longestMessage: {
+        content: '',
+        length: 0
+      },
       mediaCount: 0,
+      mediaStats: {
+        total: 0,
+        images: 0,
+        videos: 0,
+        documents: 0,
+        links: 0,
+        stickers: 0,
+        gifs: 0,
+        audio: 0
+      },
       responseTime: {
         average: null,
         fastest: null,
@@ -132,6 +244,18 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
   const messagesByDate: Record<string, number> = {};
   const messagesByHour: Record<number, number> = {};
   
+  // Overall media stats
+  const overallMediaStats: MediaStats = {
+    total: 0,
+    images: 0,
+    videos: 0,
+    documents: 0,
+    links: 0,
+    stickers: 0,
+    gifs: 0,
+    audio: 0
+  };
+  
   // Process messages
   let totalMessages = 0;
   let totalWords = 0;
@@ -139,11 +263,8 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
   let totalEmojis = 0;
   const allEmojis = new Set<string>();
   
-  // Response time calculation variables
-  const responseTimes: Record<string, number[]> = {};
-  participants.forEach(p => {
-    responseTimes[p] = [];
-  });
+  // Calculate response times
+  const responseTimes = calculateResponseTimes(sortedMessages);
   
   // Process each message
   for (let i = 0; i < sortedMessages.length; i++) {
@@ -163,6 +284,13 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     stats.characterCount += message.characterCount;
     stats.emojiCount += message.emojiCount;
     
+    // Track longest message
+    if (message.messageLength > stats.longestMessage.length) {
+      stats.longestMessage.content = message.content;
+      stats.longestMessage.length = message.messageLength;
+    }
+    
+    // Process emojis
     if (message.hasEmoji) {
       const emojis = message.content.match(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/ug) || [];
       
@@ -172,29 +300,49 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
       });
     }
     
-    if (containsMedia(message)) {
+    // Process media
+    if (message.isMedia) {
       stats.mediaCount++;
+      overallMediaStats.total++;
+      
+      // Update media type counts
+      switch (message.mediaType) {
+        case 'image':
+          stats.mediaStats.images++;
+          overallMediaStats.images++;
+          break;
+        case 'video':
+          stats.mediaStats.videos++;
+          overallMediaStats.videos++;
+          break;
+        case 'document':
+          stats.mediaStats.documents++;
+          overallMediaStats.documents++;
+          break;
+        case 'link':
+          stats.mediaStats.links++;
+          overallMediaStats.links++;
+          break;
+        case 'sticker':
+          stats.mediaStats.stickers++;
+          overallMediaStats.stickers++;
+          break;
+        case 'gif':
+          stats.mediaStats.gifs++;
+          overallMediaStats.gifs++;
+          break;
+        case 'audio':
+          stats.mediaStats.audio++;
+          overallMediaStats.audio++;
+          break;
+      }
     }
-    
-    stats.longestMessage = Math.max(stats.longestMessage, message.content.length);
     
     // Update date and hour stats
     messagesByDate[message.date] = (messagesByDate[message.date] || 0) + 1;
     
     const hour = parseInt(message.time.split(':')[0]);
     messagesByHour[hour] = (messagesByHour[hour] || 0) + 1;
-    
-    // Calculate response time if this is a response to the previous message
-    if (i > 0) {
-      const prevMessage = sortedMessages[i - 1];
-      if (prevMessage.sender !== participant) {
-        const prevTime = new Date(prevMessage.timestamp).getTime();
-        const currTime = new Date(message.timestamp).getTime();
-        const responseTime = (currTime - prevTime) / (1000 * 60); // in minutes
-        
-        responseTimes[participant].push(responseTime);
-      }
-    }
   }
   
   // Calculate average message length and response time statistics
@@ -232,8 +380,9 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
   let maxHourCount = 0;
   
   Object.entries(messagesByHour).forEach(([hour, count]) => {
+    const hourNum = parseInt(hour);
     if (count > maxHourCount) {
-      mostActiveHour = parseInt(hour);
+      mostActiveHour = hourNum;
       maxHourCount = count;
     }
   });
@@ -251,6 +400,7 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     mostActiveDate,
     mostActiveHour,
     messagesByDate,
-    messagesByHour
+    messagesByHour,
+    mediaStats: overallMediaStats
   };
 }

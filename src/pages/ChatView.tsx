@@ -21,7 +21,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isCurrentUser }) => {
   return (
     <div className={`flex mb-4 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
       <div 
-        className={`max-w-[85%] rounded-2xl px-4 py-2 ${
+        className={`max-w-[80%] rounded-2xl px-4 py-2 ${
           isCurrentUser 
             ? 'bg-green-500 text-white rounded-tr-none' 
             : 'bg-gray-200 dark:bg-gray-700 text-foreground rounded-tl-none'
@@ -103,18 +103,18 @@ const ChatView = () => {
       transition={{ duration: 0.3 }}
     >
       {/* Header */}
-      <div className="bg-primary text-primary-foreground p-3 flex items-center sticky top-0 z-10">
+      <div className="bg-primary text-primary-foreground p-4 flex items-center sticky top-0 z-10">
         <Button variant="ghost" size="icon" onClick={handleGoBack} className="mr-2 text-white">
           <ArrowLeft />
         </Button>
         <div className="flex-1">
-          <h1 className="text-lg font-bold">WhatsApp Chat</h1>
+          <h1 className="text-xl font-bold">WhatsApp Chat</h1>
           <p className="text-xs opacity-80">{messages.length} messages</p>
         </div>
       </div>
       
       {/* Search */}
-      <div className="p-2 bg-background border-b">
+      <div className="p-4 bg-background border-b">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
@@ -129,10 +129,10 @@ const ChatView = () => {
       
       {/* Messages */}
       {filteredMessages.length > 0 ? (
-        <ScrollArea className="flex-1 p-3">
+        <ScrollArea className="flex-1 p-4">
           {dates.map(date => (
             <div key={date}>
-              <div className="flex justify-center my-3">
+              <div className="flex justify-center my-4">
                 <div className="bg-muted px-3 py-1 rounded-full text-xs">
                   {date}
                 </div>

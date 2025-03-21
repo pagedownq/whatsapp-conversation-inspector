@@ -40,7 +40,7 @@ const Index = () => {
 
   return (
     <motion.div 
-      className="min-h-screen bg-background px-2 md:px-6"
+      className="min-h-screen bg-background px-4 md:px-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6 }}
@@ -60,12 +60,12 @@ const Index = () => {
           </>
         ) : (
           <>
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-2">
-              <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Chat Analysis</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-3xl font-bold tracking-tight">Chat Analysis</h2>
               <div className="flex gap-2">
                 <Button 
                   onClick={handleViewChatClick}
-                  className="flex-1 sm:flex-none flex items-center gap-2"
+                  className="flex items-center gap-2"
                 >
                   <MessageSquare className="h-4 w-4" />
                   View Chat
@@ -73,7 +73,6 @@ const Index = () => {
                 <Button 
                   variant="outline" 
                   onClick={handleReset}
-                  className="flex-1 sm:flex-none"
                 >
                   Upload New Chat
                 </Button>
@@ -93,7 +92,7 @@ const Index = () => {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.8, duration: 0.5 }}
       >
-        <p>WhatsApp Analyzer &copy; {new Date().getFullYear()}</p>
+        <p>WhatsApp Analizer &copy; {new Date().getFullYear()}</p>
       </motion.footer>
     </motion.div>
   );

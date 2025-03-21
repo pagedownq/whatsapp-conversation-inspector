@@ -1,4 +1,3 @@
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -19,14 +18,5 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-  },
-  // Ensure proper output for mobile
-  build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    // Generate JS file for older browser compatibility
-    target: 'es2015',
-    // Minimize output
-    minify: 'terser',
   },
 }));

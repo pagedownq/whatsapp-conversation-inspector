@@ -1,5 +1,5 @@
-
 import { ChatMessage, getParticipants } from './parseChat';
+import { analyzeSentiment, detectManipulation, SentimentResult, ManipulationResult } from './sentimentAnalysis';
 
 export interface MediaStats {
   total: number;
@@ -32,6 +32,29 @@ export interface ParticipantStats {
     fastest: number | null;
     slowest: number | null;
   };
+  sentiment: {
+    averageScore: number;
+    positiveMsgCount: number;
+    neutralMsgCount: number;
+    negativeMsgCount: number;
+    mostPositiveMessage: {
+      content: string;
+      score: number;
+    };
+    mostNegativeMessage: {
+      content: string;
+      score: number;
+    };
+  };
+  manipulation: {
+    averageScore: number;
+    messageCount: number;
+    examples: Array<{
+      content: string;
+      score: number;
+      instances: Array<{text: string, type: string, weight: number}>;
+    }>;
+  };
 }
 
 export interface ChatStats {
@@ -49,6 +72,17 @@ export interface ChatStats {
   messagesByDate: Record<string, number>;
   messagesByHour: Record<number, number>;
   mediaStats: MediaStats;
+  sentiment: {
+    overallScore: number;
+    positivePercentage: number;
+    negativePercentage: number;
+    neutralPercentage: number;
+  };
+  manipulation: {
+    mostManipulative: string;
+    averageScore: number;
+    messagesByType: Record<string, number>;
+  };
 }
 
 /**
@@ -236,6 +270,25 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
         average: null,
         fastest: null,
         slowest: null
+      },
+      sentiment: {
+        averageScore: 0,
+        positiveMsgCount: 0,
+        neutralMsgCount: 0,
+        negativeMsgCount: 0,
+        mostPositiveMessage: {
+          content: '',
+          score: 0
+        },
+        mostNegativeMessage: {
+          content: '',
+          score: 0
+        }
+      },
+      manipulation: {
+        averageScore: 0,
+        messageCount: 0,
+        examples: []
       }
     };
   });
@@ -265,6 +318,19 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
   
   // Calculate response times
   const responseTimes = calculateResponseTimes(sortedMessages);
+  
+  // Sentiment analysis totals
+  let totalSentimentScore = 0;
+  let positiveMsgCount = 0;
+  let neutralMsgCount = 0;
+  let negativeMsgCount = 0;
+  
+  // Manipulation analysis
+  const manipulationMessagesByType: Record<string, number> = {};
+  const participantManipulationScores: Record<string, number[]> = {};
+  participants.forEach(p => {
+    participantManipulationScores[p] = [];
+  });
   
   // Process each message
   for (let i = 0; i < sortedMessages.length; i++) {
@@ -343,6 +409,68 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     
     const hour = parseInt(message.time.split(':')[0]);
     messagesByHour[hour] = (messagesByHour[hour] || 0) + 1;
+    
+    // Analyze sentiment if the message has content and is not just media
+    if (message.content && message.content.length > 0 && !message.isMedia) {
+      const sentimentResult = analyzeSentiment(message.content);
+      
+      // Update global sentiment counts
+      totalSentimentScore += sentimentResult.score;
+      if (sentimentResult.dominant === 'positive') positiveMsgCount++;
+      else if (sentimentResult.dominant === 'negative') negativeMsgCount++;
+      else neutralMsgCount++;
+      
+      // Update participant sentiment stats
+      stats.sentiment.averageScore = 
+        (stats.sentiment.averageScore * (stats.sentiment.positiveMsgCount + stats.sentiment.negativeMsgCount + stats.sentiment.neutralMsgCount) + sentimentResult.score) / 
+        (stats.sentiment.positiveMsgCount + stats.sentiment.negativeMsgCount + stats.sentiment.neutralMsgCount + 1);
+      
+      if (sentimentResult.dominant === 'positive') stats.sentiment.positiveMsgCount++;
+      else if (sentimentResult.dominant === 'negative') stats.sentiment.negativeMsgCount++;
+      else stats.sentiment.neutralMsgCount++;
+      
+      // Track most positive/negative messages
+      if (sentimentResult.score > stats.sentiment.mostPositiveMessage.score) {
+        stats.sentiment.mostPositiveMessage = {
+          content: message.content,
+          score: sentimentResult.score
+        };
+      }
+      
+      if (sentimentResult.score < stats.sentiment.mostNegativeMessage.score) {
+        stats.sentiment.mostNegativeMessage = {
+          content: message.content,
+          score: sentimentResult.score
+        };
+      }
+      
+      // Analyze manipulation
+      const manipulationResult = detectManipulation(message.content);
+      if (manipulationResult.score > 0) {
+        stats.manipulation.messageCount++;
+        participantManipulationScores[participant].push(manipulationResult.score);
+        
+        // Track manipulation types
+        manipulationResult.instances.forEach(instance => {
+          manipulationMessagesByType[instance.type] = (manipulationMessagesByType[instance.type] || 0) + 1;
+        });
+        
+        // Store example messages (limited to 5 most manipulative)
+        if (manipulationResult.score > 0.3) {  // Only store significant examples
+          stats.manipulation.examples.push({
+            content: message.content,
+            score: manipulationResult.score,
+            instances: manipulationResult.instances
+          });
+          
+          // Keep only the top 5 most manipulative examples
+          if (stats.manipulation.examples.length > 5) {
+            stats.manipulation.examples.sort((a, b) => b.score - a.score);
+            stats.manipulation.examples = stats.manipulation.examples.slice(0, 5);
+          }
+        }
+      }
+    }
   }
   
   // Calculate average message length and response time statistics
@@ -363,6 +491,12 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     const participantMessages = sortedMessages.filter(m => m.sender === participant);
     const emojiMap = countEmojis(participantMessages);
     stats.topEmojis = getTopEmojis(emojiMap);
+    
+    // Calculate average manipulation score
+    const manipulationScores = participantManipulationScores[participant];
+    stats.manipulation.averageScore = manipulationScores.length > 0
+      ? manipulationScores.reduce((sum, score) => sum + score, 0) / manipulationScores.length
+      : 0;
   });
   
   // Find most active date and hour
@@ -387,6 +521,17 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     }
   });
   
+  // Find most manipulative participant
+  let mostManipulative = '';
+  let highestManipulationScore = -1;
+  
+  Object.entries(participantStats).forEach(([name, stats]) => {
+    if (stats.manipulation.averageScore > highestManipulationScore) {
+      mostManipulative = name;
+      highestManipulationScore = stats.manipulation.averageScore;
+    }
+  });
+  
   return {
     totalMessages,
     totalWords,
@@ -401,6 +546,19 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     mostActiveHour,
     messagesByDate,
     messagesByHour,
-    mediaStats: overallMediaStats
+    mediaStats: overallMediaStats,
+    sentiment: {
+      overallScore: totalMessages > 0 ? totalSentimentScore / totalMessages : 0,
+      positivePercentage: totalMessages > 0 ? (positiveMsgCount / totalMessages) * 100 : 0,
+      negativePercentage: totalMessages > 0 ? (negativeMsgCount / totalMessages) * 100 : 0,
+      neutralPercentage: totalMessages > 0 ? (neutralMsgCount / totalMessages) * 100 : 0
+    },
+    manipulation: {
+      mostManipulative,
+      averageScore: totalMessages > 0 
+        ? Object.values(participantManipulationScores).flat().reduce((sum, score) => sum + score, 0) / totalMessages 
+        : 0,
+      messagesByType: manipulationMessagesByType
+    }
   };
 }

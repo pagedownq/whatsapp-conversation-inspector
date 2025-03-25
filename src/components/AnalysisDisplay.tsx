@@ -1,12 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Line, LineChart } from 'recharts';
 import { useCountAnimation, useProgressAnimation } from '@/hooks/useAnimation';
 import { ChatMessage } from '@/utils/parseChat';
 import { analyzeChat, ChatStats, ParticipantStats } from '@/utils/analyzeChat';
-import { Clock, MessageSquare, Type, Smile, User, Calendar, Activity, BarChart2, Image, Video, FileText, Link, StickerIcon, Film, Mic, AlignJustify } from 'lucide-react';
+import { Clock, MessageSquare, Type, Smile, User, Calendar, Activity, BarChart2, Image, Video, FileText, Link, StickerIcon, Film, Mic, AlignJustify, HeartIcon, BrainIcon, ThumbsDownIcon, Brain } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getSentimentColor, getManipulationLevel, getManipulationTypeLabel } from '@/utils/sentimentAnalysis';
 
 interface AnalysisDisplayProps {
   chatData: ChatMessage[];
@@ -60,12 +60,11 @@ const MediaStatsCard: React.FC<{
 
 const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) => {
   const [stats, setStats] = useState<ChatStats | null>(null);
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'participants' | 'timeline' | 'media'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'participants' | 'timeline' | 'media' | 'sentiment' | 'manipulation'>('overview');
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
   const [participantColors, setParticipantColors] = useState<Record<string, string>>({});
   const isMobile = useIsMobile();
   
-  // Animation progress
   const chartProgress = useProgressAnimation({ duration: 1000, delay: 300 });
   
   useEffect(() => {
@@ -74,7 +73,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
         const analyzedStats = analyzeChat(chatData);
         setStats(analyzedStats);
         
-        // Assign colors to participants
         const participants = Object.keys(analyzedStats.participantStats);
         const colors: Record<string, string> = {};
         
@@ -84,7 +82,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
         
         setParticipantColors(colors);
         
-        // Select first participant by default
         if (participants.length > 0 && !selectedParticipant) {
           setSelectedParticipant(participants[0]);
         }
@@ -104,7 +101,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
     );
   }
   
-  // Prepare data for charts
   const messageCountData = Object.entries(stats.participantStats).map(([name, data]) => ({
     name,
     value: data.messageCount
@@ -120,7 +116,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
     value: data.emojiCount
   }));
   
-  // Prepare timeline data
   const timelineData = Object.entries(stats.messagesByDate).map(([date, count]) => ({
     date,
     count
@@ -130,13 +125,11 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
     return dateA.getTime() - dateB.getTime();
   });
   
-  // Format time of day data
   const hourlyData = Array.from({ length: 24 }, (_, hour) => ({
     hour: `${hour}:00`,
     count: stats.messagesByHour[hour] || 0
   }));
   
-  // Format media data
   const mediaData = [
     { name: 'Fotoğraflar', value: stats.mediaStats.images, icon: <Image className="h-5 w-5" />, color: '#4CAF50' },
     { name: 'Videolar', value: stats.mediaStats.videos, icon: <Video className="h-5 w-5" />, color: '#FFC107' },
@@ -147,7 +140,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
     { name: 'Sesler', value: stats.mediaStats.audio, icon: <Mic className="h-5 w-5" />, color: '#607D8B' }
   ];
   
-  // Participant media data
   const getParticipantMediaData = (participant: string) => [
     { name: 'Fotoğraflar', value: stats.participantStats[participant].mediaStats.images },
     { name: 'Videolar', value: stats.participantStats[participant].mediaStats.videos },
@@ -158,6 +150,25 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
     { name: 'Sesler', value: stats.participantStats[participant].mediaStats.audio }
   ];
 
+  const sentimentData = Object.entries(stats.participantStats).map(([name, data]) => ({
+    name,
+    score: data.sentiment.averageScore,
+    positive: data.sentiment.positiveMsgCount,
+    negative: data.sentiment.negativeMsgCount,
+    neutral: data.sentiment.neutralMsgCount,
+  }));
+  
+  const manipulationData = Object.entries(stats.participantStats).map(([name, data]) => ({
+    name,
+    score: data.manipulation.averageScore,
+    messages: data.manipulation.messageCount
+  }));
+  
+  const manipulationTypesData = Object.entries(stats.manipulation.messagesByType).map(([type, count]) => ({
+    name: getManipulationTypeLabel(type),
+    value: count
+  }));
+
   return (
     <motion.div 
       className="w-full max-w-6xl mx-auto"
@@ -165,7 +176,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Tab navigation */}
       <div className="flex overflow-x-auto mb-8 p-1 -mx-1 gap-2">
         <button
           onClick={() => setSelectedTab('overview')}
@@ -207,6 +217,16 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
         >
           Medya Analizi
         </button>
+        <button
+          onClick={() => setSelectedTab('sentiment')}
+          className={`px-4 py-2 rounded-full whitespace-nowrap ${
+            selectedTab === 'sentiment' 
+              ? 'bg-primary text-primary-foreground shadow-soft' 
+              : 'bg-secondary hover:bg-secondary/80'
+          } btn-transition`}
+        >
+          Duygu & Manipülasyon
+        </button>
       </div>
       
       <AnimatePresence mode="wait">
@@ -219,7 +239,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
         >
           {selectedTab === 'overview' && (
             <div>
-              {/* Stats cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <StatsCard 
                   icon={<MessageSquare className="h-5 w-5" />}
@@ -244,7 +263,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                 />
               </div>
               
-              {/* Message distribution */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <div className="bg-card rounded-2xl p-6 shadow-soft">
                   <h3 className="text-lg font-medium mb-4">Mesaj Dağılımı</h3>
@@ -320,7 +338,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                 </div>
               </div>
               
-              {/* Emoji usage */}
               <div className="bg-card rounded-2xl p-6 shadow-soft mb-8">
                 <h3 className="text-lg font-medium mb-4">Emoji Kullanımı</h3>
                 <div className="h-64">
@@ -354,7 +371,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
           
           {selectedTab === 'participants' && (
             <div>
-              {/* Participant selector */}
               <div className="mb-6 flex flex-wrap gap-2">
                 {Object.keys(stats.participantStats).map(participant => (
                   <button
@@ -376,7 +392,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
               
               {selectedParticipant && (
                 <div className="space-y-6">
-                  {/* Participant stats grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatsCard 
                       icon={<MessageSquare className="h-5 w-5" />}
@@ -401,7 +416,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                     />
                   </div>
                   
-                  {/* Top emojis */}
                   <div className="bg-card rounded-2xl p-6 shadow-soft">
                     <h3 className="text-lg font-medium mb-4">En Çok Kullanılan Emojiler</h3>
                     
@@ -424,7 +438,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                     </div>
                   </div>
                   
-                  {/* Longest message */}
                   <div className="bg-card rounded-2xl p-6 shadow-soft">
                     <h3 className="text-lg font-medium mb-4">En Uzun Mesaj</h3>
                     <div className="bg-secondary/30 rounded-xl p-4 break-words">
@@ -440,7 +453,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                     </div>
                   </div>
                   
-                  {/* Media stats */}
                   <div className="bg-card rounded-2xl p-6 shadow-soft">
                     <h3 className="text-lg font-medium mb-4">Medya Paylaşımları</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -456,7 +468,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                     </div>
                   </div>
                   
-                  {/* Response time */}
                   <div className="bg-card rounded-2xl p-6 shadow-soft">
                     <h3 className="text-lg font-medium mb-4">Yanıt Süresi</h3>
                     
@@ -496,7 +507,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
           
           {selectedTab === 'timeline' && (
             <div className="space-y-6">
-              {/* Message activity over time */}
               <div className="bg-card rounded-2xl p-6 shadow-soft">
                 <h3 className="text-lg font-medium mb-4">Mesaj Etkinliği</h3>
                 <div className="h-64">
@@ -528,7 +538,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                 </div>
               </div>
               
-              {/* Messages by hour */}
               <div className="bg-card rounded-2xl p-6 shadow-soft">
                 <h3 className="text-lg font-medium mb-4">Günün Saatlerine Göre Etkinlik</h3>
                 <div className="h-64">
@@ -556,7 +565,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                 </div>
               </div>
               
-              {/* Activity insights */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                 <div className="bg-card rounded-2xl p-6 shadow-soft">
                   <h3 className="text-lg font-medium mb-4">En Aktif Zaman</h3>
@@ -623,7 +631,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
           
           {selectedTab === 'media' && (
             <div className="space-y-6">
-              {/* Media overview */}
               <div className="bg-card rounded-2xl p-6 shadow-soft">
                 <h3 className="text-lg font-medium mb-4">Medya Genel Bakış</h3>
                 
@@ -676,7 +683,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                 </div>
               </div>
               
-              {/* Media comparison */}
               <div className="bg-card rounded-2xl p-6 shadow-soft">
                 <h3 className="text-lg font-medium mb-4">Medya Karşılaştırma</h3>
                 <div className="h-80">
@@ -706,7 +712,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                 </div>
               </div>
               
-              {/* Media distribution by participant */}
               <div className="bg-card rounded-2xl p-6 shadow-soft">
                 <h3 className="text-lg font-medium mb-4">Katılımcı Bazında Medya Dağılımı</h3>
                 
@@ -748,10 +753,220 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
               </div>
             </div>
           )}
+          
+          {selectedTab === 'sentiment' && (
+            <div className="space-y-6">
+              <div className="bg-card rounded-2xl p-6 shadow-soft">
+                <h3 className="text-lg font-medium mb-4">Genel Duygu Analizi</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-secondary/50 rounded-xl p-5 flex flex-col items-center">
+                    <div className="rounded-full p-2 mb-2 bg-green-100">
+                      <HeartIcon className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div className="text-2xl font-medium">{Math.round(stats.sentiment.positivePercentage)}%</div>
+                    <div className="text-sm text-muted-foreground">Pozitif Mesajlar</div>
+                  </div>
+                  
+                  <div className="bg-secondary/50 rounded-xl p-5 flex flex-col items-center">
+                    <div className="rounded-full p-2 mb-2 bg-yellow-100">
+                      <Activity className="h-5 w-5 text-yellow-600" />
+                    </div>
+                    <div className="text-2xl font-medium">{Math.round(stats.sentiment.neutralPercentage)}%</div>
+                    <div className="text-sm text-muted-foreground">Nötr Mesajlar</div>
+                  </div>
+                  
+                  <div className="bg-secondary/50 rounded-xl p-5 flex flex-col items-center">
+                    <div className="rounded-full p-2 mb-2 bg-red-100">
+                      <ThumbsDownIcon className="h-5 w-5 text-red-600" />
+                    </div>
+                    <div className="text-2xl font-medium">{Math.round(stats.sentiment.negativePercentage)}%</div>
+                    <div className="text-sm text-muted-foreground">Negatif Mesajlar</div>
+                  </div>
+                </div>
+                
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={sentimentData}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip 
+                        formatter={(value: any, name: any) => {
+                          switch(name) {
+                            case 'positive': return [`${value} pozitif mesaj`, 'Pozitif'];
+                            case 'negative': return [`${value} negatif mesaj`, 'Negatif'];
+                            case 'neutral': return [`${value} nötr mesaj`, 'Nötr'];
+                            default: return [value, name];
+                          }
+                        }}
+                      />
+                      <Bar dataKey="positive" stackId="a" fill="#2ed573" />
+                      <Bar dataKey="neutral" stackId="a" fill="#ffa502" />
+                      <Bar dataKey="negative" stackId="a" fill="#ff4757" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              
+              <div className="bg-card rounded-2xl p-6 shadow-soft">
+                <h3 className="text-lg font-medium mb-4">Manipülasyon Analizi</h3>
+                
+                <div className="mb-6 p-4 bg-secondary/20 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Brain className="h-5 w-5 text-primary" />
+                    <h4 className="font-medium">En Çok Manipüle Eden Kişi:</h4>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-4 h-4 rounded-full" 
+                      style={{ backgroundColor: participantColors[stats.manipulation.mostManipulative] || '#ccc' }}
+                    ></div>
+                    <span className="text-lg font-medium">{stats.manipulation.mostManipulative}</span>
+                    <span className="text-sm text-muted-foreground ml-auto">
+                      Manipülasyon Seviyesi: {getManipulationLevel(stats.participantStats[stats.manipulation.mostManipulative]?.manipulation.averageScore || 0)}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="h-64 mb-6">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={manipulationData}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip 
+                        formatter={(value: any, name: any) => {
+                          if (name === 'score') return [value.toFixed(2), 'Manipülasyon Skoru (0-1)'];
+                          if (name === 'messages') return [value, 'Manipülatif Mesaj Sayısı'];
+                          return [value, name];
+                        }}
+                      />
+                      <Bar dataKey="score" fill="#9C27B0" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                
+                <div className="mb-4">
+                  <h4 className="font-medium mb-3">Manipülasyon Türleri</h4>
+                  {manipulationTypesData.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {manipulationTypesData.map((type, index) => (
+                        <div key={index} className="bg-secondary/30 p-3 rounded-lg flex justify-between">
+                          <span className="text-sm">{type.name}:</span>
+                          <span className="font-medium">{type.value} mesaj</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-center py-4">Manipülatif mesaj tespit edilmedi.</p>
+                  )}
+                </div>
+                
+                <div>
+                  <h4 className="font-medium mb-3">Manipülatif Mesaj Örnekleri</h4>
+                  <div className="space-y-3">
+                    {Object.entries(stats.participantStats).map(([name, pstats]) => (
+                      pstats.manipulation.examples.length > 0 && (
+                        <div key={name} className="border border-border/30 rounded-xl p-4">
+                          <div className="flex items-center mb-3">
+                            <div 
+                              className="w-3 h-3 rounded-full mr-2" 
+                              style={{ backgroundColor: participantColors[name] || '#ccc' }}
+                            ></div>
+                            <span className="font-medium">{name}</span>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            {pstats.manipulation.examples.slice(0, 2).map((example, i) => (
+                              <div key={i} className="bg-secondary/20 rounded-lg p-3 text-sm">
+                                <p className="mb-2">{example.content}</p>
+                                <div className="text-xs text-muted-foreground">
+                                  <span className="font-medium">Manipülasyon türleri: </span>
+                                  {example.instances.map((instance, j) => (
+                                    <span key={j} className="inline-block mr-1 mb-1 px-1.5 py-0.5 rounded-full bg-secondary">
+                                      {getManipulationTypeLabel(instance.type)}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    ))}
+                    
+                    {Object.values(stats.participantStats).every(pstats => pstats.manipulation.examples.length === 0) && (
+                      <p className="text-muted-foreground text-center py-4">Belirgin manipülatif mesaj örneği bulunamadı.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {selectedParticipant && (
+                <div className="bg-card rounded-2xl p-6 shadow-soft">
+                  <h3 className="text-lg font-medium mb-4">Katılımcı Duygu Analizi</h3>
+                  
+                  <div className="mb-6 flex flex-wrap gap-2">
+                    {Object.keys(stats.participantStats).map(participant => (
+                      <button
+                        key={participant}
+                        onClick={() => setSelectedParticipant(participant)}
+                        className={`px-4 py-2 rounded-full btn-transition ${
+                          selectedParticipant === participant
+                            ? 'bg-primary text-primary-foreground shadow-soft'
+                            : 'bg-secondary hover:bg-secondary/80'
+                        }`}
+                        style={selectedParticipant === participant ? {} : {
+                          borderLeft: `3px solid ${participantColors[participant]}`
+                        }}
+                      >
+                        {participant}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-secondary/30 rounded-xl p-4">
+                      <div className="flex items-center mb-3">
+                        <div className="bg-green-100 p-2 rounded-full mr-2">
+                          <HeartIcon className="h-4 w-4 text-green-600" />
+                        </div>
+                        <h4 className="font-medium">En Pozitif Mesaj</h4>
+                        <span className="ml-auto text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                          Skor: {stats.participantStats[selectedParticipant].sentiment.mostPositiveMessage.score.toFixed(2)}
+                        </span>
+                      </div>
+                      <p className="text-sm">
+                        {stats.participantStats[selectedParticipant].sentiment.mostPositiveMessage.content || 'Pozitif mesaj bulunamadı'}
+                      </p>
+                    </div>
+                    
+                    <div className="bg-secondary/30 rounded-xl p-4">
+                      <div className="flex items-center mb-3">
+                        <div className="bg-red-100 p-2 rounded-full mr-2">
+                          <ThumbsDownIcon className="h-4 w-4 text-red-600" />
+                        </div>
+                        <h4 className="font-medium">En Negatif Mesaj</h4>
+                        <span className="ml-auto text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full">
+                          Skor: {stats.participantStats[selectedParticipant].sentiment.mostNegativeMessage.score.toFixed(2)}
+                        </span>
+                      </div>
+                      <p className="text-sm">
+                        {stats.participantStats[selectedParticipant].sentiment.mostNegativeMessage.content || 'Negatif mesaj bulunamadı'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </motion.div>
       </AnimatePresence>
       
-      {/* Reset button */}
       <div className="mt-10 text-center">
         <button
           onClick={onReset}

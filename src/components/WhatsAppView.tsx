@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { ChatMessage } from '@/utils/parseChat';
-import { MessageSquare, Paperclip, Smile, Mic, Send, ChevronLeft, MoreVertical, Phone, Video, Search } from 'lucide-react';
+import { MessageSquare, Paperclip, Smile, Mic, ChevronLeft, MoreVertical, Phone, Video, Search } from 'lucide-react';
 import { getSentimentColor } from '@/utils/sentimentAnalysis';
 import { analyzeSentiment, detectManipulation } from '@/utils/sentimentAnalysis';
 
@@ -15,13 +16,13 @@ interface WhatsAppViewProps {
 const WhatsAppView: React.FC<WhatsAppViewProps> = ({ messages, onBack }) => {
   const [sortedMessages, setSortedMessages] = useState<ChatMessage[]>([]);
   const [participants, setParticipants] = useState<string[]>([]);
-  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Sort messages by date and time
     const sorted = [...messages].sort((a, b) => {
-      const dateA = new Date(a.date.split('.').reverse().join('-') + 'T' + a.time);
-      const dateB = new Date(b.date.split('.').reverse().join('-') + 'T' + b.time);
+      const dateA = new Date(formatDateTimeForParsing(a.date, a.time));
+      const dateB = new Date(formatDateTimeForParsing(b.date, b.time));
       return dateA.getTime() - dateB.getTime();
     });
     
@@ -36,6 +37,26 @@ const WhatsAppView: React.FC<WhatsAppViewProps> = ({ messages, onBack }) => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
   }, [messages]);
+
+  // Format date and time for parsing
+  const formatDateTimeForParsing = (date: string, time: string): string => {
+    // Convert DD.MM.YYYY or DD/MM/YYYY to MM/DD/YYYY for proper parsing
+    const normalized = date.replace(/[/\-]/g, '.');
+    const parts = normalized.split('.');
+    
+    if (parts.length === 3) {
+      // Handle 2-digit years
+      if (parts[2].length === 2) {
+        const year = parseInt(parts[2]);
+        parts[2] = (year < 50 ? '20' : '19') + parts[2];
+      }
+      
+      // Convert DD.MM.YYYY to MM/DD/YYYY format for Date parsing
+      return `${parts[1]}/${parts[0]}/${parts[2]} ${time}`;
+    }
+    
+    return `${date} ${time}`; // Return original format if we can't parse it
+  };
 
   // Group messages by date
   const messagesByDate: Record<string, ChatMessage[]> = {};
@@ -203,7 +224,7 @@ const WhatsAppView: React.FC<WhatsAppViewProps> = ({ messages, onBack }) => {
       {/* Chat background */}
       <div 
         className="flex-1 overflow-y-auto p-3 space-y-2"
-        style={{ backgroundImage: "url('data:image/png;base64,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')" }}
+        style={{ backgroundImage: "url('data:image/png;base64,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')" }}
       >
         {/* Messages grouped by date */}
         {Object.entries(messagesByDate).map(([date, msgs]) => (

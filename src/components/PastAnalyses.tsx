@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, ChevronRight, Trash2, Clock, Calendar, User, Brain, HeartIcon } from 'lucide-react';
+import { MessageSquare, ChevronRight, Trash2, Clock, Calendar, User, Brain, Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ChatStats } from '@/utils/analyzeChat';
 

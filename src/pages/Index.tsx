@@ -46,10 +46,29 @@ const Index = () => {
   }, [parsedMessages, uploadMode]);
 
   const handleFileProcessed = (content: string) => {
-    const messages = parseChat(content);
-    setParsedMessages(messages);
-    setUploadMode(false);
-    setViewMode('analysis');
+    try {
+      const messages = parseChat(content);
+      
+      if (messages.length === 0) {
+        toast({
+          title: 'Dosya Hatası',
+          description: 'Dosya içerisinde mesaj bulunamadı veya dosya formatı uygun değil',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      setParsedMessages(messages);
+      setUploadMode(false);
+      setViewMode('analysis');
+    } catch (error) {
+      console.error('Error processing file:', error);
+      toast({
+        title: 'Dosya Hatası',
+        description: 'Dosya işlenirken bir hata oluştu',
+        variant: 'destructive'
+      });
+    }
   };
 
   const handleUploadClick = () => {

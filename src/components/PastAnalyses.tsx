@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, ChevronRight, Trash2, Clock, Calendar, User, Brain, Heart } from 'lucide-react';
+import { MessageSquare, ChevronRight, Trash2, Clock, Calendar, User, Brain } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ChatStats } from '@/utils/analyzeChat';
 
@@ -55,7 +55,10 @@ const PastAnalyses: React.FC<PastAnalysesProps> = ({ onSelectAnalysis }) => {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string, e: React.MouseEvent) => {
+    // Prevent event bubbling to parent elements
+    e.stopPropagation();
+    
     try {
       const updatedAnalyses = analyses.filter(a => a.id !== id);
       setAnalyses(updatedAnalyses);
@@ -70,6 +73,19 @@ const PastAnalyses: React.FC<PastAnalysesProps> = ({ onSelectAnalysis }) => {
       toast({
         title: 'Hata',
         description: 'Analiz silinemedi',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleSelectAnalysis = (analysis: PastAnalysis) => {
+    // Check if the data property exists and it's a valid object
+    if (analysis && analysis.data) {
+      onSelectAnalysis(analysis.data);
+    } else {
+      toast({
+        title: 'Hata',
+        description: 'Analiz verisi eksik veya hatalı',
         variant: 'destructive',
       });
     }
@@ -121,8 +137,9 @@ const PastAnalyses: React.FC<PastAnalysesProps> = ({ onSelectAnalysis }) => {
         {analyses.map(analysis => (
           <motion.div 
             key={analysis.id}
-            className="border border-border rounded-xl overflow-hidden bg-card shadow-sm hover:shadow-md transition-shadow"
+            className="border border-border rounded-xl overflow-hidden bg-card shadow-sm hover:shadow-md transition-shadow cursor-pointer"
             whileHover={{ y: -2 }}
+            onClick={() => handleSelectAnalysis(analysis)}
           >
             <div className="p-4">
               <div className="flex justify-between items-start mb-3">
@@ -155,7 +172,7 @@ const PastAnalyses: React.FC<PastAnalysesProps> = ({ onSelectAnalysis }) => {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => handleDelete(analysis.id)}
+                  onClick={(e) => handleDelete(analysis.id, e)}
                   className="text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
@@ -163,9 +180,8 @@ const PastAnalyses: React.FC<PastAnalysesProps> = ({ onSelectAnalysis }) => {
                 </Button>
                 
                 <Button
-                  onClick={() => onSelectAnalysis(analysis.data)}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                   size="sm"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   <span>Görüntüle</span>
                   <ChevronRight className="h-4 w-4 ml-1" />

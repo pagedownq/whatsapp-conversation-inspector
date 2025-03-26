@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
@@ -21,31 +21,36 @@ const Index = () => {
   const [uploadVisible, setUploadVisible] = useState<boolean>(false);
   const [parsedMessages, setParsedMessages] = useState<ChatMessage[]>([]);
   const [analysisStats, setAnalysisStats] = useState<ChatStats | null>(null);
-  const [activeTab, setActiveTab] = useState('analyze');
+  const [activeTab, setActiveTab] = useState('upload');
   const [viewMode, setViewMode] = useState<'analysis' | 'whatsapp' | 'past'>('analysis');
   const [savingAnalysis, setSavingAnalysis] = useState(false);
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Analyze messages - wrapped in useCallback to prevent unnecessary recreations
+  const analyzeMessages = useCallback((messages: ChatMessage[]) => {
+    try {
+      const stats = analyzeChat(messages);
+      setAnalysisStats(stats);
+    } catch (error) {
+      console.error('Error analyzing chat:', error);
+      toast({
+        title: 'Analiz Hatası',
+        description: 'Sohbet analiz edilirken bir hata oluştu',
+        variant: 'destructive'
+      });
+    }
+  }, [toast]);
+
   useEffect(() => {
     // Check if there's an active analysis to display
     if (parsedMessages.length > 0 && !uploadMode) {
-      try {
-        const stats = analyzeChat(parsedMessages);
-        setAnalysisStats(stats);
-      } catch (error) {
-        console.error('Error analyzing chat:', error);
-        toast({
-          title: 'Analiz Hatası',
-          description: 'Sohbet analiz edilirken bir hata oluştu',
-          variant: 'destructive'
-        });
-      }
+      analyzeMessages(parsedMessages);
     }
-  }, [parsedMessages, uploadMode]);
+  }, [parsedMessages, uploadMode, analyzeMessages]);
 
-  const handleFileProcessed = (content: string) => {
+  const handleFileProcessed = useCallback((content: string) => {
     try {
       const messages = parseChat(content);
       
@@ -69,21 +74,28 @@ const Index = () => {
         variant: 'destructive'
       });
     }
-  };
+  }, [toast]);
 
-  const handleUploadClick = () => {
+  const handleUploadClick = useCallback(() => {
     setUploadVisible(true);
-  };
+  }, []);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setParsedMessages([]);
     setAnalysisStats(null);
     setUploadMode(true);
     setUploadVisible(false);
     setViewMode('analysis');
-  };
+    setActiveTab('upload');
+  }, []);
 
-  const handleSaveAnalysis = () => {
+  const handleSelectAnalysis = useCallback((data: ChatStats) => {
+    setAnalysisStats(data);
+    setUploadMode(false);
+    setViewMode('analysis');
+  }, []);
+
+  const handleSaveAnalysis = useCallback(() => {
     if (!analysisStats) return;
     
     try {
@@ -131,20 +143,14 @@ const Index = () => {
       });
       setSavingAnalysis(false);
     }
-  };
-
-  const handleSelectAnalysis = (data: ChatStats) => {
-    setAnalysisStats(data);
-    setUploadMode(false);
-    setViewMode('analysis');
-  };
+  }, [analysisStats, toast]);
 
   const renderContent = () => {
     if (uploadMode) {
       return (
         <>
           {!uploadVisible && (
-            <Tabs defaultValue="upload" className="w-full max-w-4xl mx-auto">
+            <Tabs defaultValue={activeTab} className="w-full max-w-4xl mx-auto" onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="upload">Yeni Analiz</TabsTrigger>
                 <TabsTrigger value="past">Geçmiş Analizler</TabsTrigger>
@@ -223,7 +229,7 @@ const Index = () => {
       className="min-h-screen bg-background px-4 md:px-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.6 }}
+      transition={{ duration: 0.3 }}
     >
       <Header />
       
@@ -235,7 +241,7 @@ const Index = () => {
         className="py-6 text-center text-sm text-muted-foreground"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.8, duration: 0.5 }}
+        transition={{ delay: 0.5, duration: 0.3 }}
       >
         <p>WhatsApp Analyzer &copy; {new Date().getFullYear()}</p>
       </motion.footer>

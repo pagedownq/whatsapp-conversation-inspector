@@ -7,7 +7,6 @@ import Header from '@/components/Header';
 import EmptyState from '@/components/EmptyState';
 import UploadSection from '@/components/UploadSection';
 import AnalysisDisplay from '@/components/AnalysisDisplay';
-import WhatsAppView from '@/components/WhatsAppView';
 import PastAnalyses from '@/components/PastAnalyses';
 import { parseChat, ChatMessage } from '@/utils/parseChat';
 import { analyzeChat, ChatStats } from '@/utils/analyzeChat';
@@ -22,7 +21,7 @@ const Index = () => {
   const [parsedMessages, setParsedMessages] = useState<ChatMessage[]>([]);
   const [analysisStats, setAnalysisStats] = useState<ChatStats | null>(null);
   const [activeTab, setActiveTab] = useState('upload');
-  const [viewMode, setViewMode] = useState<'analysis' | 'whatsapp' | 'past'>('analysis');
+  const [viewMode, setViewMode] = useState<'analysis' | 'past'>('analysis');
   const [savingAnalysis, setSavingAnalysis] = useState(false);
   const isMobile = useIsMobile();
   const { toast } = useToast();
@@ -173,33 +172,9 @@ const Index = () => {
       );
     }
     
-    if (viewMode === 'whatsapp' && parsedMessages.length > 0) {
-      return (
-        <WhatsAppView 
-          messages={parsedMessages} 
-          onBack={() => setViewMode('analysis')}
-        />
-      );
-    }
-    
     return (
       <>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex space-x-2">
-            <Button 
-              variant={viewMode === 'analysis' ? 'default' : 'outline'}
-              onClick={() => setViewMode('analysis')}
-            >
-              Analiz
-            </Button>
-            <Button 
-              variant={viewMode === 'whatsapp' ? 'default' : 'outline'}
-              onClick={() => setViewMode('whatsapp')}
-            >
-              WhatsApp Görünümü
-            </Button>
-          </div>
-          
+        <div className="flex items-center justify-between mb-6">          
           <div className="flex space-x-2">
             <Button 
               variant="outline" 

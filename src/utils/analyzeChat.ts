@@ -1,5 +1,12 @@
 import { ChatMessage, getParticipants } from './parseChat';
-import { analyzeSentiment, detectManipulation, SentimentResult, ManipulationResult } from './sentimentAnalysis';
+import { 
+  analyzeSentiment, 
+  detectManipulation, 
+  detectApologies, 
+  detectLoveExpressions, 
+  SentimentResult, 
+  ManipulationResult 
+} from './sentimentAnalysis';
 
 export interface MediaStats {
   total: number;
@@ -55,6 +62,22 @@ export interface ParticipantStats {
       instances: Array<{text: string, type: string, weight: number}>;
     }>;
   };
+  apologies: {
+    count: number;
+    examples: Array<{
+      content: string;
+      text: string;
+    }>;
+  };
+  loveExpressions: {
+    count: number;
+    iLoveYouCount: number;
+    examples: Array<{
+      content: string;
+      text: string;
+      isILoveYou: boolean;
+    }>;
+  };
 }
 
 export interface ChatStats {
@@ -82,6 +105,24 @@ export interface ChatStats {
     mostManipulative: string;
     averageScore: number;
     messagesByType: Record<string, number>;
+  };
+  apologies: {
+    total: number;
+    mostApologetic: string;
+    apologyExamples: Array<{
+      sender: string;
+      content: string;
+      text: string;
+    }>;
+  };
+  loveExpressions: {
+    total: number;
+    mostRomantic: string;
+    iLoveYouCount: Record<string, number>;
+    mostCommonExpressions: Array<{
+      text: string;
+      count: number;
+    }>;
   };
 }
 
@@ -119,40 +160,33 @@ function getTopEmojis(emojiMap: Map<string, number>, n: number = 5): Array<{emoj
  * Calculate the duration between two dates in days
  */
 function calculateDurationInDays(startDate: string, endDate: string): number {
-  // Convert DD.MM.YYYY or DD/MM/YYYY to MM/DD/YYYY for proper parsing
   const formatDateForParsing = (dateStr: string) => {
-    // First normalize separators to a standard format (.)
     const normalized = dateStr.replace(/[/\-]/g, '.');
     const parts = normalized.split('.');
     
-    // Check if we have a 2-digit year and convert to 4-digit
     if (parts.length === 3 && parts[2].length === 2) {
       const year = parseInt(parts[2]);
-      // Assume 20xx for years less than 50, 19xx for years 50+
       parts[2] = (year < 50 ? '20' : '19') + parts[2];
     }
     
-    // Convert DD.MM.YYYY to MM/DD/YYYY format for Date parsing
     if (parts.length === 3) {
       return `${parts[1]}/${parts[0]}/${parts[2]}`;
     }
     
-    return dateStr; // Return original if we can't parse it
+    return dateStr;
   };
   
   try {
     const start = new Date(formatDateForParsing(startDate));
     const end = new Date(formatDateForParsing(endDate));
     
-    // Calculate the difference in milliseconds and convert to days
     const diffInMs = Math.abs(end.getTime() - start.getTime());
     const diffInDays = Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
     
-    // Return at least 1 day if the chat happened on the same day
     return Math.max(diffInDays, 1);
   } catch (error) {
     console.error("Error calculating duration:", error);
-    return 1; // Return 1 day as fallback
+    return 1;
   }
 }
 
@@ -162,28 +196,23 @@ function calculateDurationInDays(startDate: string, endDate: string): number {
 function calculateResponseTimes(messages: ChatMessage[]): Record<string, number[]> {
   const responseTimes: Record<string, number[]> = {};
   
-  // Initialize response times array for each participant
   const participants = new Set<string>();
   messages.forEach(m => participants.add(m.sender));
   participants.forEach(p => {
     responseTimes[p] = [];
   });
   
-  // Calculate response times
   for (let i = 1; i < messages.length; i++) {
     const currentMessage = messages[i];
     const prevMessage = messages[i - 1];
     
-    // Only calculate if the sender is different (it's a response)
     if (currentMessage.sender !== prevMessage.sender) {
       try {
         const prevTime = new Date(formatDateTimeForParsing(prevMessage.date, prevMessage.time)).getTime();
         const currTime = new Date(formatDateTimeForParsing(currentMessage.date, currentMessage.time)).getTime();
         
-        // Calculate difference in minutes
         const responseTime = (currTime - prevTime) / (1000 * 60);
         
-        // Only include reasonable response times (less than 24 hours)
         if (responseTime > 0 && responseTime < 24 * 60) {
           responseTimes[currentMessage.sender].push(responseTime);
         }
@@ -200,22 +229,19 @@ function calculateResponseTimes(messages: ChatMessage[]): Record<string, number[
  * Format date and time for parsing
  */
 function formatDateTimeForParsing(date: string, time: string): string {
-  // Convert DD.MM.YYYY or DD/MM/YYYY to MM/DD/YYYY for proper parsing
   const normalized = date.replace(/[/\-]/g, '.');
   const parts = normalized.split('.');
   
   if (parts.length === 3) {
-    // Handle 2-digit years
     if (parts[2].length === 2) {
       const year = parseInt(parts[2]);
       parts[2] = (year < 50 ? '20' : '19') + parts[2];
     }
     
-    // Convert DD.MM.YYYY to MM/DD/YYYY format for Date parsing
     return `${parts[1]}/${parts[0]}/${parts[2]} ${time}`;
   }
   
-  return `${date} ${time}`; // Return original format if we can't parse it
+  return `${date} ${time}`;
 }
 
 /**
@@ -226,7 +252,6 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     throw new Error('No messages to analyze');
   }
   
-  // Sort messages by timestamp
   const sortedMessages = [...messages].sort((a, b) => {
     const dateA = new Date(formatDateTimeForParsing(a.date, a.time));
     const dateB = new Date(formatDateTimeForParsing(b.date, b.time));
@@ -237,7 +262,6 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
   const endDate = sortedMessages[sortedMessages.length - 1].date;
   const durationDays = calculateDurationInDays(startDate, endDate);
   
-  // Initialize overall stats
   const participants = getParticipants(sortedMessages);
   const participantStats: Record<string, ParticipantStats> = {};
   
@@ -289,15 +313,22 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
         averageScore: 0,
         messageCount: 0,
         examples: []
+      },
+      apologies: {
+        count: 0,
+        examples: []
+      },
+      loveExpressions: {
+        count: 0,
+        iLoveYouCount: 0,
+        examples: []
       }
     };
   });
   
-  // Group messages by date and hour
   const messagesByDate: Record<string, number> = {};
   const messagesByHour: Record<number, number> = {};
   
-  // Overall media stats
   const overallMediaStats: MediaStats = {
     total: 0,
     images: 0,
@@ -309,133 +340,84 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     audio: 0
   };
   
-  // Process messages
   let totalMessages = 0;
   let totalWords = 0;
   let totalCharacters = 0;
   let totalEmojis = 0;
   const allEmojis = new Set<string>();
   
-  // Calculate response times
   const responseTimes = calculateResponseTimes(sortedMessages);
   
-  // Sentiment analysis totals
   let totalSentimentScore = 0;
   let positiveMsgCount = 0;
   let neutralMsgCount = 0;
   let negativeMsgCount = 0;
   
-  // Manipulation analysis
   const manipulationMessagesByType: Record<string, number> = {};
   const participantManipulationScores: Record<string, number[]> = {};
   participants.forEach(p => {
     participantManipulationScores[p] = [];
   });
   
-  // Process each message
+  let totalApologies = 0;
+  let totalLoveExpressions = 0;
+  let mostApologeticPerson = '';
+  let mostApologeticCount = 0;
+  let mostRomanticPerson = '';
+  let mostRomanticCount = 0;
+  const loveExpressionCounts: Record<string, number> = {};
+  const apologyExamples: Array<{sender: string, content: string, text: string}> = [];
+  
   for (let i = 0; i < sortedMessages.length; i++) {
     const message = sortedMessages[i];
     const participant = message.sender;
     
-    // Update global counts
     totalMessages++;
     totalWords += message.wordCount;
     totalCharacters += message.characterCount;
     totalEmojis += message.emojiCount;
     
-    // Update participant stats
     const stats = participantStats[participant];
     stats.messageCount++;
     stats.wordCount += message.wordCount;
     stats.characterCount += message.characterCount;
     stats.emojiCount += message.emojiCount;
     
-    // Track longest message
     if (message.messageLength > stats.longestMessage.length) {
       stats.longestMessage.content = message.content;
       stats.longestMessage.length = message.messageLength;
     }
     
-    // Process emojis
-    if (message.hasEmoji) {
-      const emojis = message.content.match(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/ug) || [];
-      
-      emojis.forEach(emoji => {
-        stats.uniqueEmojis.add(emoji);
-        allEmojis.add(emoji);
-      });
+    const emojiMap = countEmojis([message]);
+    emojiMap.forEach((count, emoji) => {
+      stats.emojiCount += count;
+      stats.uniqueEmojis.add(emoji);
+      allEmojis.add(emoji);
+    });
+    
+    const linkMatches = message.content.match(/https?:\/\/[^\s]+/g);
+    if (linkMatches) {
+      stats.mediaStats.links += linkMatches.length;
+      overallMediaStats.links += linkMatches.length;
+      overallMediaStats.total += linkMatches.length;
     }
     
-    // Process media
-    if (message.isMedia) {
-      stats.mediaCount++;
-      overallMediaStats.total++;
-      
-      // Update media type counts
-      switch (message.mediaType) {
-        case 'image':
-          stats.mediaStats.images++;
-          overallMediaStats.images++;
-          break;
-        case 'video':
-          stats.mediaStats.videos++;
-          overallMediaStats.videos++;
-          break;
-        case 'document':
-          stats.mediaStats.documents++;
-          overallMediaStats.documents++;
-          break;
-        case 'link':
-          stats.mediaStats.links++;
-          overallMediaStats.links++;
-          break;
-        case 'sticker':
-          stats.mediaStats.stickers++;
-          overallMediaStats.stickers++;
-          break;
-        case 'gif':
-          stats.mediaStats.gifs++;
-          overallMediaStats.gifs++;
-          break;
-        case 'audio':
-          stats.mediaStats.audio++;
-          overallMediaStats.audio++;
-          break;
-      }
-    }
+    const sentimentResult = analyzeSentiment(message.content);
+    totalSentimentScore += sentimentResult.score;
     
-    // Update date and hour stats
-    messagesByDate[message.date] = (messagesByDate[message.date] || 0) + 1;
-    
-    const hour = parseInt(message.time.split(':')[0]);
-    messagesByHour[hour] = (messagesByHour[hour] || 0) + 1;
-    
-    // Analyze sentiment if the message has content and is not just media
-    if (message.content && message.content.length > 0 && !message.isMedia) {
-      const sentimentResult = analyzeSentiment(message.content);
+    if (sentimentResult.dominant === 'positive') {
+      positiveMsgCount++;
+      stats.sentiment.positiveMsgCount++;
       
-      // Update global sentiment counts
-      totalSentimentScore += sentimentResult.score;
-      if (sentimentResult.dominant === 'positive') positiveMsgCount++;
-      else if (sentimentResult.dominant === 'negative') negativeMsgCount++;
-      else neutralMsgCount++;
-      
-      // Update participant sentiment stats
-      stats.sentiment.averageScore = 
-        (stats.sentiment.averageScore * (stats.sentiment.positiveMsgCount + stats.sentiment.negativeMsgCount + stats.sentiment.neutralMsgCount) + sentimentResult.score) / 
-        (stats.sentiment.positiveMsgCount + stats.sentiment.negativeMsgCount + stats.sentiment.neutralMsgCount + 1);
-      
-      if (sentimentResult.dominant === 'positive') stats.sentiment.positiveMsgCount++;
-      else if (sentimentResult.dominant === 'negative') stats.sentiment.negativeMsgCount++;
-      else stats.sentiment.neutralMsgCount++;
-      
-      // Track most positive/negative messages
       if (sentimentResult.score > stats.sentiment.mostPositiveMessage.score) {
         stats.sentiment.mostPositiveMessage = {
           content: message.content,
           score: sentimentResult.score
         };
       }
+    } else if (sentimentResult.dominant === 'negative') {
+      negativeMsgCount++;
+      stats.sentiment.negativeMsgCount++;
       
       if (sentimentResult.score < stats.sentiment.mostNegativeMessage.score) {
         stats.sentiment.mostNegativeMessage = {
@@ -443,85 +425,152 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
           score: sentimentResult.score
         };
       }
+    } else {
+      neutralMsgCount++;
+      stats.sentiment.neutralMsgCount++;
+    }
+    
+    const manipulationResult = detectManipulation(message.content);
+    if (manipulationResult.score > 0) {
+      stats.manipulation.messageCount++;
+      participantManipulationScores[participant].push(manipulationResult.score);
       
-      // Analyze manipulation
-      const manipulationResult = detectManipulation(message.content);
-      if (manipulationResult.score > 0) {
-        stats.manipulation.messageCount++;
-        participantManipulationScores[participant].push(manipulationResult.score);
-        
-        // Track manipulation types
-        manipulationResult.instances.forEach(instance => {
-          manipulationMessagesByType[instance.type] = (manipulationMessagesByType[instance.type] || 0) + 1;
+      manipulationResult.instances.forEach(instance => {
+        stats.manipulation.examples.push({
+          content: message.content,
+          score: manipulationResult.score,
+          instances: manipulationResult.instances
         });
         
-        // Store example messages (limited to 5 most manipulative)
-        if (manipulationResult.score > 0.3) {  // Only store significant examples
-          stats.manipulation.examples.push({
-            content: message.content,
-            score: manipulationResult.score,
-            instances: manipulationResult.instances
-          });
-          
-          // Keep only the top 5 most manipulative examples
-          if (stats.manipulation.examples.length > 5) {
-            stats.manipulation.examples.sort((a, b) => b.score - a.score);
-            stats.manipulation.examples = stats.manipulation.examples.slice(0, 5);
-          }
+        if (manipulationResult.score > 0.3) {
+          stats.manipulation.examples.sort((a, b) => b.score - a.score);
+          stats.manipulation.examples = stats.manipulation.examples.slice(0, 5);
         }
+      });
+    }
+    
+    const apologyResult = detectApologies(message.content);
+    if (apologyResult.found) {
+      apologyResult.instances.forEach(instance => {
+        stats.apologies.count++;
+        totalApologies++;
+        
+        if (stats.apologies.examples.length < 5) {
+          stats.apologies.examples.push({
+            content: message.content,
+            text: instance.text
+          });
+        }
+        
+        if (apologyExamples.length < 10) {
+          apologyExamples.push({
+            sender: participant,
+            content: message.content,
+            text: instance.text
+          });
+        }
+      });
+      
+      if (stats.apologies.count > mostApologeticCount) {
+        mostApologeticCount = stats.apologies.count;
+        mostApologeticPerson = participant;
       }
     }
+    
+    const loveResult = detectLoveExpressions(message.content);
+    if (loveResult.found) {
+      loveResult.instances.forEach(instance => {
+        stats.loveExpressions.count++;
+        totalLoveExpressions++;
+        
+        loveExpressionCounts[instance.text.toLowerCase()] = (loveExpressionCounts[instance.text.toLowerCase()] || 0) + 1;
+        
+        if (loveResult.containsILoveYou) {
+          stats.loveExpressions.iLoveYouCount++;
+        }
+        
+        if (stats.loveExpressions.examples.length < 5) {
+          stats.loveExpressions.examples.push({
+            content: message.content,
+            text: instance.text,
+            isILoveYou: /seni seviyorum|I love you/i.test(instance.text)
+          });
+        }
+      });
+      
+      if (stats.loveExpressions.count > mostRomanticCount) {
+        mostRomanticCount = stats.loveExpressions.count;
+        mostRomanticPerson = participant;
+      }
+    }
+    
+    messagesByDate[message.date] = (messagesByDate[message.date] || 0) + 1;
+    messagesByHour[parseInt(message.time.split(':')[0])] = (messagesByHour[parseInt(message.time.split(':')[0])] || 0) + 1;
   }
   
-  // Calculate average message length and response time statistics
+  participants.forEach(participant => {
+    const times = responseTimes[participant] || [];
+    if (times.length > 0) {
+      const avg = times.reduce((sum, time) => sum + time, 0) / times.length;
+      const sorted = [...times].sort((a, b) => a - b);
+      
+      participantStats[participant].responseTime = {
+        average: avg,
+        fastest: sorted[0],
+        slowest: sorted[sorted.length - 1]
+      };
+    }
+  });
+  
   participants.forEach(participant => {
     const stats = participantStats[participant];
-    stats.averageMessageLength = stats.messageCount > 0 
-      ? stats.characterCount / stats.messageCount 
-      : 0;
     
-    const times = responseTimes[participant];
-    if (times.length > 0) {
-      stats.responseTime.average = times.reduce((sum, time) => sum + time, 0) / times.length;
-      stats.responseTime.fastest = Math.min(...times);
-      stats.responseTime.slowest = Math.max(...times);
+    stats.averageMessageLength = stats.characterCount / Math.max(stats.messageCount, 1);
+    
+    const participantEmojiMap = new Map<string, number>();
+    stats.uniqueEmojis.forEach(emoji => {
+      participantEmojiMap.set(emoji, 0);
+    });
+    
+    sortedMessages
+      .filter(m => m.sender === participant)
+      .forEach(message => {
+        const emojiMatches = message.content.match(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu);
+        if (emojiMatches) {
+          emojiMatches.forEach(emoji => {
+            participantEmojiMap.set(emoji, (participantEmojiMap.get(emoji) || 0) + 1);
+          });
+        }
+      });
+    
+    stats.topEmojis = getTopEmojis(participantEmojiMap, 5);
+    
+    stats.sentiment.averageScore = (stats.sentiment.positiveMsgCount - stats.sentiment.negativeMsgCount) / 
+      Math.max(stats.messageCount, 1);
+    
+    if (stats.manipulation.messageCount > 0) {
+      stats.manipulation.averageScore /= stats.manipulation.messageCount;
     }
-    
-    // Calculate top emojis for each participant
-    const participantMessages = sortedMessages.filter(m => m.sender === participant);
-    const emojiMap = countEmojis(participantMessages);
-    stats.topEmojis = getTopEmojis(emojiMap);
-    
-    // Calculate average manipulation score
-    const manipulationScores = participantManipulationScores[participant];
-    stats.manipulation.averageScore = manipulationScores.length > 0
-      ? manipulationScores.reduce((sum, score) => sum + score, 0) / manipulationScores.length
-      : 0;
   });
   
-  // Find most active date and hour
-  let mostActiveDate = '';
-  let maxDateCount = 0;
-  
+  let maxMessages = 0;
+  let mostActiveDate = startDate;
   Object.entries(messagesByDate).forEach(([date, count]) => {
-    if (count > maxDateCount) {
+    if (count > maxMessages) {
+      maxMessages = count;
       mostActiveDate = date;
-      maxDateCount = count;
     }
   });
   
+  let maxHourMessages = 0;
   let mostActiveHour = 0;
-  let maxHourCount = 0;
-  
   Object.entries(messagesByHour).forEach(([hour, count]) => {
-    const hourNum = parseInt(hour);
-    if (count > maxHourCount) {
-      mostActiveHour = hourNum;
-      maxHourCount = count;
+    if (count > maxHourMessages) {
+      maxHourMessages = count;
+      mostActiveHour = parseInt(hour);
     }
   });
   
-  // Find most manipulative participant
   let mostManipulative = '';
   let highestManipulationScore = -1;
   
@@ -530,6 +579,16 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
       mostManipulative = name;
       highestManipulationScore = stats.manipulation.averageScore;
     }
+  });
+  
+  const sortedLoveExpressions = Object.entries(loveExpressionCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([text, count]) => ({ text, count }));
+  
+  const iLoveYouCounts: Record<string, number> = {};
+  participants.forEach(participant => {
+    iLoveYouCounts[participant] = participantStats[participant].loveExpressions.iLoveYouCount;
   });
   
   return {
@@ -559,6 +618,17 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
         ? Object.values(participantManipulationScores).flat().reduce((sum, score) => sum + score, 0) / totalMessages 
         : 0,
       messagesByType: manipulationMessagesByType
+    },
+    apologies: {
+      total: totalApologies,
+      mostApologetic: mostApologeticPerson,
+      apologyExamples
+    },
+    loveExpressions: {
+      total: totalLoveExpressions,
+      mostRomantic: mostRomanticPerson,
+      iLoveYouCount: iLoveYouCounts,
+      mostCommonExpressions: sortedLoveExpressions
     }
   };
 }

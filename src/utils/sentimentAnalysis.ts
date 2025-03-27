@@ -1,4 +1,3 @@
-
 /**
  * Simple sentiment analysis utility for detecting emotions and manipulative language
  */
@@ -57,6 +56,18 @@ const manipulationPatterns = [
   { pattern: /(?:ben ben ben|hep benim dediğim|sadece beni düşün|bana ne|sen benim için)/i, weight: 0.6, type: 'egocentric' }
 ];
 
+// New patterns for apology detection
+const apologyPatterns = [
+  { pattern: /(?:özür dilerim|üzgünüm|kusura bakma|affet|pardon|beni affet|af dilerim|özür|pişmanım|hata yaptım)/i, type: 'apology' },
+  { pattern: /(?:sorry|apologize|forgive me|my bad|my fault|I was wrong)/i, type: 'apology' }
+];
+
+// New patterns for love expressions
+const loveExpressionPatterns = [
+  { pattern: /(?:seni seviyorum|aşkım|sevgilim|canım|hayatım|seni çok seviyorum|aşk|sevgi|kalp|kalbin|gönlün)/i, type: 'love' },
+  { pattern: /(?:I love you|love you|my love|my heart|darling|sweetheart|honey)/i, type: 'love' }
+];
+
 export interface SentimentResult {
   score: number;  // -1 to 1 (negative to positive)
   dominant: 'positive' | 'negative' | 'neutral';
@@ -72,6 +83,40 @@ export interface ManipulationResult {
     type: string;
     weight: number;
   }>;
+}
+
+export interface ApologyResult {
+  found: boolean;
+  instances: Array<{
+    text: string;
+  }>;
+}
+
+export interface LoveExpressionResult {
+  found: boolean;
+  instances: Array<{
+    text: string;
+  }>;
+  containsILoveYou: boolean;
+}
+
+// Communication style analysis
+export interface CommunicationStyleResult {
+  primary: 'direct' | 'passive' | 'aggressive' | 'passive-aggressive' | 'assertive' | 'mixed';
+  assertiveScore: number;  // 0 to 1
+  aggressiveScore: number; // 0 to 1
+  passiveScore: number;    // 0 to 1
+  passiveAggressiveScore: number; // 0 to 1
+  formality: number;       // 0 to 1 (informal to formal)
+  directness: number;      // 0 to 1 (indirect to direct)
+}
+
+// Intimacy analysis
+export interface IntimacyAnalysisResult {
+  level: 'low' | 'medium' | 'high';
+  score: number; // 0 to 1
+  indicators: string[];
+  consistency: number; // 0 to 1
 }
 
 /**
@@ -149,6 +194,173 @@ export function detectManipulation(text: string): ManipulationResult {
   return {
     score,
     instances
+  };
+}
+
+/**
+ * Detect apologies in a given text
+ */
+export function detectApologies(text: string): ApologyResult {
+  let instances: Array<{ text: string }> = [];
+  
+  // Check for apology patterns
+  apologyPatterns.forEach(pattern => {
+    const matches = text.match(pattern.pattern);
+    if (matches) {
+      matches.forEach(match => {
+        instances.push({
+          text: match
+        });
+      });
+    }
+  });
+  
+  return {
+    found: instances.length > 0,
+    instances
+  };
+}
+
+/**
+ * Detect love expressions in a given text
+ */
+export function detectLoveExpressions(text: string): LoveExpressionResult {
+  let instances: Array<{ text: string }> = [];
+  let containsILoveYou = false;
+  
+  // Check for love expression patterns
+  loveExpressionPatterns.forEach(pattern => {
+    const matches = text.match(pattern.pattern);
+    if (matches) {
+      matches.forEach(match => {
+        instances.push({
+          text: match
+        });
+        
+        // Check for specific "I love you" expressions
+        if (/seni seviyorum|I love you/i.test(match)) {
+          containsILoveYou = true;
+        }
+      });
+    }
+  });
+  
+  return {
+    found: instances.length > 0,
+    instances,
+    containsILoveYou
+  };
+}
+
+/**
+ * Analyze communication style in a message
+ */
+export function analyzeCommunicationStyle(text: string): CommunicationStyleResult {
+  // Simple analysis based on keywords and patterns
+  const assertivePatterns = /(?:düşünüyorum|hissediyorum|inanıyorum|bence|sanırım|yapabiliriz|öneririm|I think|I feel|I believe|in my opinion|we could)/i;
+  const aggressivePatterns = /(?:yapmalısın|zorundasın|asla|hemen|kesinlikle|you must|you have to|always|never|immediately)/i;
+  const passivePatterns = /(?:belki|sanırım|olabilir|bilmiyorum|olur mu|maybe|perhaps|possibly|I guess|do you think)/i;
+  const passiveAggressivePatterns = /(?:nasıl istersen|önemli değil|boşver|whatever|fine|doesn't matter|never mind)/i;
+  
+  // Calculate scores based on pattern matches
+  const assertiveScore = assertivePatterns.test(text) ? 0.7 : 0.2;
+  const aggressiveScore = aggressivePatterns.test(text) ? 0.7 : 0.2;
+  const passiveScore = passivePatterns.test(text) ? 0.7 : 0.2;
+  const passiveAggressiveScore = passiveAggressivePatterns.test(text) ? 0.7 : 0.2;
+  
+  // Calculate formality based on text characteristics
+  const formalIndicators = /(?:saygılar|rica ederim|lütfen|iyi günler|merhaba|regards|please|sincerely|good day)/i;
+  const informalIndicators = /(?:selam|hey|n'aber|napıyon|he ya|evet ya|yok ya|hi|hey|what's up|yeah)/i;
+  
+  const formality = formalIndicators.test(text) ? 0.8 : (informalIndicators.test(text) ? 0.2 : 0.5);
+  
+  // Calculate directness
+  const directIndicators = /(?:doğrudan|direk|açıkça|açık olmak gerekirse|directly|clearly|frankly|to be honest)/i;
+  const indirectIndicators = /(?:belki|galiba|sanki|acaba|aslında|perhaps|maybe|wonder|just)/i;
+  
+  const directness = directIndicators.test(text) ? 0.8 : (indirectIndicators.test(text) ? 0.2 : 0.5);
+  
+  // Determine primary style
+  let primary: 'direct' | 'passive' | 'aggressive' | 'passive-aggressive' | 'assertive' | 'mixed' = 'mixed';
+  
+  const scores = [
+    { style: 'assertive', score: assertiveScore },
+    { style: 'aggressive', score: aggressiveScore },
+    { style: 'passive', score: passiveScore },
+    { style: 'passive-aggressive', score: passiveAggressiveScore }
+  ];
+  
+  const maxScore = Math.max(...scores.map(s => s.score));
+  const dominantStyles = scores.filter(s => s.score === maxScore);
+  
+  if (dominantStyles.length === 1) {
+    primary = dominantStyles[0].style as any;
+  } else if (assertiveScore > 0.5 && directness > 0.6) {
+    primary = 'direct';
+  }
+  
+  return {
+    primary,
+    assertiveScore,
+    aggressiveScore,
+    passiveScore,
+    passiveAggressiveScore,
+    formality,
+    directness
+  };
+}
+
+/**
+ * Analyze intimacy in a message
+ */
+export function analyzeIntimacy(text: string): IntimacyAnalysisResult {
+  // Intimacy indicators (keywords and patterns)
+  const highIntimacyIndicators = [
+    /(?:seni seviyorum|aşkım|canım|hayatım|özledim|özlüyorum|I love you|miss you|my love|my heart)/i,
+    /(?:özel|mahrem|secret|intimate|personal|private)/i,
+    /(?:yalnızca seninle|sadece senin|only with you|just you and me)/i
+  ];
+  
+  const mediumIntimacyIndicators = [
+    /(?:arkadaşım|dostum|friend|buddy|pal)/i,
+    /(?:paylaşmak|share|birlikte|together)/i,
+    /(?:güveniyorum|trust|believe in you)/i
+  ];
+  
+  // Count occurrences of intimacy indicators
+  let highCount = 0;
+  let mediumCount = 0;
+  
+  highIntimacyIndicators.forEach(pattern => {
+    if (pattern.test(text)) highCount++;
+  });
+  
+  mediumIntimacyIndicators.forEach(pattern => {
+    if (pattern.test(text)) mediumCount++;
+  });
+  
+  // Calculate intimacy score
+  const score = (highCount * 0.2) + (mediumCount * 0.1);
+  const normalizedScore = Math.min(score, 1);
+  
+  // Determine intimacy level
+  let level: 'low' | 'medium' | 'high' = 'low';
+  if (normalizedScore > 0.5) level = 'high';
+  else if (normalizedScore > 0.2) level = 'medium';
+  
+  // Collect indicators found
+  const indicators: string[] = [];
+  
+  if (/(?:seni seviyorum|I love you)/i.test(text)) indicators.push('Love expressions');
+  if (/(?:özledim|miss you)/i.test(text)) indicators.push('Missing expressions');
+  if (/(?:güveniyorum|trust)/i.test(text)) indicators.push('Trust expressions');
+  if (/(?:özel|secret|intimate)/i.test(text)) indicators.push('Sharing secrets');
+  
+  return {
+    level,
+    score: normalizedScore,
+    indicators,
+    consistency: 0.5 // This would ideally be calculated over time
   };
 }
 

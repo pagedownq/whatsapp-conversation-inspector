@@ -4,7 +4,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 import { useCountAnimation, useProgressAnimation } from '@/hooks/useAnimation';
 import { ChatMessage } from '@/utils/parseChat';
 import { analyzeChat, ChatStats, ParticipantStats } from '@/utils/analyzeChat';
-import { Clock, MessageSquare, Type, Smile, User, Calendar, Activity, BarChart2, Image, Video, FileText, Link, StickerIcon, Film, Mic, AlignJustify, HeartIcon, BrainIcon, ThumbsDownIcon, Brain } from 'lucide-react';
+import { Clock, MessageSquare, Type, Smile, User, Calendar, Activity, BarChart2, Image, Video, FileText, Link, StickerIcon, Film, Mic, AlignJustify, HeartIcon, BrainIcon, ThumbsDownIcon, Brain, Heart } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getSentimentColor, getManipulationLevel, getManipulationTypeLabel } from '@/utils/sentimentAnalysis';
 
@@ -60,7 +60,7 @@ const MediaStatsCard: React.FC<{
 
 const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) => {
   const [stats, setStats] = useState<ChatStats | null>(null);
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'participants' | 'timeline' | 'media' | 'sentiment' | 'manipulation'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'participants' | 'timeline' | 'media' | 'sentiment' | 'manipulation' | 'relationship'>('overview');
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
   const [participantColors, setParticipantColors] = useState<Record<string, string>>({});
   const isMobile = useIsMobile();
@@ -169,6 +169,17 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
     value: count
   }));
 
+  const apologyData = Object.entries(stats.participantStats).map(([name, data]) => ({
+    name,
+    count: data.apologies.count
+  })).sort((a, b) => b.count - a.count);
+  
+  const loveExpressionData = Object.entries(stats.participantStats).map(([name, data]) => ({
+    name,
+    count: data.loveExpressions.count,
+    iLoveYouCount: data.loveExpressions.iLoveYouCount
+  })).sort((a, b) => b.count - a.count);
+
   return (
     <motion.div 
       className="w-full max-w-6xl mx-auto"
@@ -226,6 +237,16 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
           } btn-transition`}
         >
           Duygu & Manipülasyon
+        </button>
+        <button
+          onClick={() => setSelectedTab('relationship')}
+          className={`px-4 py-2 rounded-full whitespace-nowrap ${
+            selectedTab === 'relationship' 
+              ? 'bg-primary text-primary-foreground shadow-soft' 
+              : 'bg-secondary hover:bg-secondary/80'
+          } btn-transition`}
+        >
+          İlişki Analizi
         </button>
       </div>
       
@@ -962,6 +983,243 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                   </div>
                 </div>
               )}
+            </div>
+          )}
+          
+          {selectedTab === 'relationship' && (
+            <div className="space-y-6">
+              <div className="bg-card rounded-2xl p-6 shadow-soft">
+                <h3 className="text-lg font-medium mb-4">Özür Dileme Analizi</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div className="bg-secondary/50 rounded-xl p-5">
+                    <h4 className="font-medium mb-3">En Çok Özür Dileyen</h4>
+                    {stats.apologies.total > 0 ? (
+                      <div className="flex items-center">
+                        <div 
+                          className="w-3 h-3 rounded-full mr-2" 
+                          style={{ backgroundColor: participantColors[stats.apologies.mostApologetic] }}
+                        ></div>
+                        <span className="text-lg font-medium">{stats.apologies.mostApologetic}</span>
+                        <span className="ml-auto text-xl font-medium">
+                          {stats.participantStats[stats.apologies.mostApologetic]?.apologies.count || 0} kez
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">Hiç özür dileme ifadesi bulunamadı.</p>
+                    )}
+                  </div>
+                  
+                  <div className="bg-secondary/50 rounded-xl p-5">
+                    <h4 className="font-medium mb-3">Toplam Özür Dileme</h4>
+                    <div className="text-4xl font-medium text-center">
+                      {stats.apologies.total}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={apologyData}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip formatter={(value: any) => [`${value} kez özür dilemiş`, '']} />
+                      <Bar 
+                        dataKey="count" 
+                        fill="#9370DB"
+                        animationBegin={0}
+                        animationDuration={1500}
+                        animationEasing="ease-out"
+                      >
+                        {apologyData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={participantColors[entry.name]} 
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                
+                {stats.apologies.apologyExamples.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="font-medium mb-3">Özür Örnekleri</h4>
+                    <div className="space-y-3">
+                      {stats.apologies.apologyExamples.slice(0, 5).map((example, idx) => (
+                        <div 
+                          key={idx} 
+                          className="bg-secondary/20 rounded-lg p-3"
+                        >
+                          <div className="flex items-center mb-2">
+                            <div 
+                              className="w-3 h-3 rounded-full mr-2" 
+                              style={{ backgroundColor: participantColors[example.sender] || '#ccc' }}
+                            ></div>
+                            <span className="text-sm font-medium">{example.sender}:</span>
+                            <span className="ml-2 text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
+                              {example.text}
+                            </span>
+                          </div>
+                          <p className="text-sm">{example.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="bg-card rounded-2xl p-6 shadow-soft">
+                <h3 className="text-lg font-medium mb-4">Sevgi İfadeleri Analizi</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div className="bg-secondary/50 rounded-xl p-5">
+                    <h4 className="font-medium mb-3">En Çok Sevgi İfadesi Kullanan</h4>
+                    {stats.loveExpressions.total > 0 ? (
+                      <div className="flex items-center">
+                        <div 
+                          className="w-3 h-3 rounded-full mr-2" 
+                          style={{ backgroundColor: participantColors[stats.loveExpressions.mostRomantic] }}
+                        ></div>
+                        <span className="text-lg font-medium">{stats.loveExpressions.mostRomantic}</span>
+                        <span className="ml-auto text-xl font-medium">
+                          {stats.participantStats[stats.loveExpressions.mostRomantic]?.loveExpressions.count || 0} kez
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">Hiç sevgi ifadesi bulunamadı.</p>
+                    )}
+                  </div>
+                  
+                  <div className="bg-secondary/50 rounded-xl p-5">
+                    <h4 className="font-medium mb-3">Toplam Sevgi İfadesi</h4>
+                    <div className="text-4xl font-medium text-center">
+                      {stats.loveExpressions.total}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="h-64">
+                    <h4 className="font-medium mb-3 text-center">Sevgi İfadeleri</h4>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={loveExpressionData}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip formatter={(value: any) => [`${value} sevgi ifadesi`, '']} />
+                        <Bar 
+                          dataKey="count" 
+                          fill="#FF6B81"
+                          animationBegin={0}
+                          animationDuration={1500}
+                          animationEasing="ease-out"
+                        >
+                          {loveExpressionData.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={participantColors[entry.name]} 
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  
+                  <div className="h-64">
+                    <h4 className="font-medium mb-3 text-center">"Seni Seviyorum" İfadeleri</h4>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={loveExpressionData}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip formatter={(value: any) => [`${value} kez "seni seviyorum" demiş`, '']} />
+                        <Bar 
+                          dataKey="iLoveYouCount" 
+                          fill="#E84393"
+                          animationBegin={0}
+                          animationDuration={1500}
+                          animationEasing="ease-out"
+                        >
+                          {loveExpressionData.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={participantColors[entry.name]} 
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                
+                {stats.loveExpressions.mostCommonExpressions.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="font-medium mb-3">En Sık Kullanılan Sevgi İfadeleri</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                      {stats.loveExpressions.mostCommonExpressions.map((expression, idx) => (
+                        <div 
+                          key={idx} 
+                          className="bg-pink-50 text-pink-800 rounded-lg p-3 text-center border border-pink-200"
+                        >
+                          <div className="text-lg font-medium mb-1">
+                            "{expression.text}"
+                          </div>
+                          <div className="text-sm text-pink-600">
+                            {expression.count} kez
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {selectedParticipant && (
+                  <div className="mt-6 p-4 bg-secondary/20 rounded-xl">
+                    <h4 className="font-medium mb-3">{selectedParticipant} için Sevgi İfadeleri Detayları</h4>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-white/50 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">Toplam Sevgi İfadesi:</span>
+                          <span className="font-bold">
+                            {stats.participantStats[selectedParticipant].loveExpressions.count}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">"Seni Seviyorum" İfadesi:</span>
+                          <span className="font-bold">
+                            {stats.participantStats[selectedParticipant].loveExpressions.iLoveYouCount}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white/50 rounded-lg p-3">
+                        <div className="flex items-center mb-2">
+                          <Heart className="h-4 w-4 text-pink-500 mr-2" />
+                          <span className="font-medium">Örnekler:</span>
+                        </div>
+                        {stats.participantStats[selectedParticipant].loveExpressions.examples.length > 0 ? (
+                          <ul className="list-disc pl-5 space-y-1 text-sm">
+                            {stats.participantStats[selectedParticipant].loveExpressions.examples.slice(0, 3).map((ex, i) => (
+                              <li key={i} className={ex.isILoveYou ? "text-pink-600 font-medium" : ""}>
+                                {ex.text}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Sevgi ifadesi bulunamadı.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </motion.div>

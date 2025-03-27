@@ -1,15 +1,6 @@
 
-import { ChatMessage, getParticipants, formatDateTimeForParsing } from './parseChat';
-import { 
-  analyzeSentiment, 
-  detectManipulation, 
-  analyzeCommunicationStyle,
-  analyzeIntimacy,
-  SentimentResult, 
-  ManipulationResult,
-  CommunicationStyleResult,
-  IntimacyAnalysisResult
-} from './sentimentAnalysis';
+import { ChatMessage, getParticipants } from './parseChat';
+import { analyzeSentiment, detectManipulation, SentimentResult, ManipulationResult } from './sentimentAnalysis';
 
 // Media statistics interface
 export interface MediaStats {
@@ -55,9 +46,6 @@ export interface RelationshipDynamics {
   supportiveness: number; // 0-1, level of support shown
   reciprocity: number; // 0-1, balance of give and take
   topicAlignment: number; // 0-1, how often on the same topic
-  intimacyLevel: number; // 0-1, level of intimacy in communication
-  communicationCompatibility: number; // 0-1, how compatible communication styles are
-  trustIndicators: number; // 0-1, indicators of trust in communication
 }
 
 // Participant statistics with enhanced analytics
@@ -114,15 +102,6 @@ export interface ParticipantStats {
     closed: number; // yes/no questions
     rhetorical: number; // rhetorical questions
   };
-  // New analytics
-  communicationStyle: CommunicationStyleResult;
-  intimacyAnalysis: IntimacyAnalysisResult;
-  replySpeed: {
-    average: number; // in minutes
-    trend: 'increasing' | 'decreasing' | 'stable';
-  };
-  emotionalIntelligence: number; // 0-1, ability to recognize and respond to emotions
-  conversationInfluence: number; // 0-1, how much they direct conversation topics
 }
 
 // Enhanced Chat Statistics interface
@@ -164,30 +143,6 @@ export interface ChatStats {
     depth: number; // 0-1, depth of conversations
     balance: number; // 0-1, how balanced the conversation is
     growth: number; // -1 to 1, trend of relationship growth
-  };
-  // New extended analytics
-  groupDynamics: {
-    dominantParticipants: string[];
-    peripheralParticipants: string[];
-    subgroups: Array<{
-      participants: string[];
-      interactionStrength: number;
-    }>;
-    cohesion: number; // 0-1, group cohesion
-  };
-  conversationPatterns: {
-    peakTimes: number[];
-    weekdayActivity: Record<string, number>;
-    burstsVsSteady: number; // -1 to 1, negative is bursty, positive is steady
-    cyclicalPatterns: Array<{
-      period: string;
-      confidence: number;
-    }>;
-  };
-  languageComplexity: {
-    averageComplexity: number;
-    trendOverTime: 'increasing' | 'decreasing' | 'stable';
-    participantComparison: Record<string, number>;
   };
 }
 
@@ -300,6 +255,28 @@ function calculateResponseTimes(messages: ChatMessage[]): Record<string, number[
   }
   
   return responseTimes;
+}
+
+/**
+ * Format date and time for parsing
+ */
+function formatDateTimeForParsing(date: string, time: string): string {
+  // Convert DD.MM.YYYY or DD/MM/YYYY to MM/DD/YYYY for proper parsing
+  const normalized = date.replace(/[/\-]/g, '.');
+  const parts = normalized.split('.');
+  
+  if (parts.length === 3) {
+    // Handle 2-digit years
+    if (parts[2].length === 2) {
+      const year = parseInt(parts[2]);
+      parts[2] = (year < 50 ? '20' : '19') + parts[2];
+    }
+    
+    // Convert DD.MM.YYYY to MM/DD/YYYY format for Date parsing
+    return `${parts[1]}/${parts[0]}/${parts[2]} ${time}`;
+  }
+  
+  return `${date} ${time}`; // Return original format if we can't parse it
 }
 
 /**
@@ -521,10 +498,7 @@ function analyzeRelationshipDynamics(allMessages: ChatMessage[], participant1: s
       conflictResolution: 0,
       supportiveness: 0,
       reciprocity: 0,
-      topicAlignment: 0,
-      intimacyLevel: 0,
-      communicationCompatibility: 0,
-      trustIndicators: 0
+      topicAlignment: 0
     };
   }
   
@@ -577,9 +551,6 @@ function analyzeRelationshipDynamics(allMessages: ChatMessage[], participant1: s
   const supportiveness = calculateSupportiveness(relevantMessages);
   const reciprocity = calculateReciprocity(relevantMessages);
   const topicAlignment = calculateTopicAlignment(relevantMessages);
-  const intimacyLevel = 0.5; // Default middle value
-  const communicationCompatibility = 0.5; // Default middle value
-  const trustIndicators = 0.5; // Default middle value
   
   // Conflict resolution is harder to detect but can be estimated
   const conflictResolution = Math.max(0, 1 - conflictFrequency * (1 - supportiveness));
@@ -591,10 +562,7 @@ function analyzeRelationshipDynamics(allMessages: ChatMessage[], participant1: s
     conflictResolution: clamp(conflictResolution, 0, 1),
     supportiveness: clamp(supportiveness, 0, 1),
     reciprocity: clamp(reciprocity, 0, 1),
-    topicAlignment: clamp(topicAlignment, 0, 1),
-    intimacyLevel: clamp(intimacyLevel, 0, 1),
-    communicationCompatibility: clamp(communicationCompatibility, 0, 1),
-    trustIndicators: clamp(trustIndicators, 0, 1)
+    topicAlignment: clamp(topicAlignment, 0, 1)
   };
 }
 
@@ -733,255 +701,6 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * Calculate attentiveness score based on response patterns
- */
-function calculateAttentiveness(messages: ChatMessage[], participant: string): number {
-  const participantMessages = messages.filter(m => m.sender === participant);
-  if (participantMessages.length < 3) return 0.5;
-  
-  // Look for question-response patterns
-  let questionResponseCount = 0;
-  let questionCount = 0;
-  
-  for (let i = 1; i < messages.length; i++) {
-    const prevMsg = messages[i-1];
-    const currMsg = messages[i];
-    
-    // If previous message ends with a question and current is from the participant
-    if (prevMsg.sender !== participant && currMsg.sender === participant && prevMsg.content.trim().endsWith('?')) {
-      questionCount++;
-      
-      // Check if response contains content from the question (simplified)
-      const prevWords = extractSignificantWords(prevMsg.content);
-      const currWords = extractSignificantWords(currMsg.content);
-      
-      if (currWords.some(word => prevWords.includes(word))) {
-        questionResponseCount++;
-      }
-    }
-  }
-  
-  return questionCount > 0 ? questionResponseCount / questionCount : 0.5;
-}
-
-/**
- * Calculate emotional intelligence based on response patterns to emotional content
- */
-function calculateEmotionalIntelligence(messages: ChatMessage[], participant: string): number {
-  if (messages.length < 10) return 0.5;
-  
-  let emotionalResponses = 0;
-  let emotionalMessages = 0;
-  
-  for (let i = 1; i < messages.length; i++) {
-    const prevMsg = messages[i-1];
-    const currMsg = messages[i];
-    
-    // Only analyze if current message is from the participant and previous is not
-    if (prevMsg.sender !== participant && currMsg.sender === participant) {
-      const prevSentiment = analyzeSentiment(prevMsg.content);
-      
-      // If previous message had strong emotion
-      if (prevSentiment.score < -0.5 || prevSentiment.score > 0.5) {
-        emotionalMessages++;
-        
-        // Analyze if response acknowledges the emotion
-        const empathyWords = [
-          'anlıyorum', 'üzgünüm', 'sevindim', 'mutlu oldum', 'anladım', 'hissediyorum',
-          'understand', 'sorry', 'glad', 'happy for you', 'feel', 'emotion'
-        ];
-        
-        if (empathyWords.some(word => currMsg.content.toLowerCase().includes(word))) {
-          emotionalResponses++;
-        }
-      }
-    }
-  }
-  
-  return emotionalMessages > 0 ? 
-    Math.min(emotionalResponses / emotionalMessages * 1.5, 1) : 0.5;
-}
-
-/**
- * Calculate conversation influence (how much they steer topics)
- */
-function calculateConversationInfluence(messages: ChatMessage[], participant: string): number {
-  if (messages.length < 10) return 0.5;
-  
-  let topicChanges = 0;
-  let participantTopicChanges = 0;
-  
-  for (let i = 1; i < messages.length; i++) {
-    const prevMsg = messages[i-1];
-    const currMsg = messages[i];
-    
-    // Simplified topic change detection
-    const similarity = calculateContentSimilarity(prevMsg.content, currMsg.content);
-    
-    if (similarity < 0.2) { // Low similarity indicates topic change
-      topicChanges++;
-      
-      if (currMsg.sender === participant) {
-        participantTopicChanges++;
-      }
-    }
-  }
-  
-  return topicChanges > 0 ? 
-    Math.min(participantTopicChanges / topicChanges * 2, 1) : 0.5;
-}
-
-/**
- * Determine communication strengths based on participant stats
- */
-function determineStrengths(stats: ParticipantStats): string[] {
-  const strengths: string[] = [];
-  
-  if (stats.conversationStyle.consistency > 0.7) {
-    strengths.push('Tutarlı İletişim');
-  }
-  
-  if (stats.intimacyAnalysis.score > 0.6) {
-    strengths.push('Yakın İlişki Kurabilme');
-  }
-  
-  if (stats.emotionalIntelligence > 0.7) {
-    strengths.push('Duygusal Zeka');
-  }
-  
-  if (stats.vocabularyComplexity > 0.7) {
-    strengths.push('Zengin Kelime Dağarcığı');
-  }
-  
-  if (stats.questionTypes.open > stats.questionTypes.closed) {
-    strengths.push('Açık Uçlu Sorular Sorma');
-  }
-  
-  // Add default strength if none found
-  if (strengths.length === 0) {
-    strengths.push('Açık İletişim');
-  }
-  
-  return strengths.slice(0, 3); // Return top 3 strengths
-}
-
-/**
- * Determine communication weaknesses based on participant stats
- */
-function determineWeaknesses(stats: ParticipantStats): string[] {
-  const weaknesses: string[] = [];
-  
-  if (stats.conversationStyle.consistency < 0.3) {
-    weaknesses.push('Tutarsız İletişim');
-  }
-  
-  if (stats.manipulation.averageScore > 0.4) {
-    weaknesses.push('Manipülatif Eğilimler');
-  }
-  
-  if (stats.emotionalIntelligence < 0.3) {
-    weaknesses.push('Duygusal Zeka Eksikliği');
-  }
-  
-  if (stats.conversationStyle.initiationRate < 0.2) {
-    weaknesses.push('Konuşma Başlatmada Çekingenlik');
-  }
-  
-  // Add default weakness if none found
-  if (weaknesses.length === 0) {
-    weaknesses.push('İletişim Eksikliği');
-  }
-  
-  return weaknesses.slice(0, 3); // Return top 3 weaknesses
-}
-
-/**
- * Calculate standard deviation of an array of numbers
- */
-function calculateStandardDeviation(values: number[]): number {
-  if (values.length === 0) return 0;
-  
-  const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
-  const squareDiffs = values.map(value => Math.pow(value - avg, 2));
-  const variance = squareDiffs.reduce((sum, square) => sum + square, 0) / values.length;
-  
-  return Math.sqrt(variance);
-}
-
-/**
- * Find peak activity times in message hour distribution
- */
-function findPeakTimes(messagesByHour: Record<number, number>): number[] {
-  const entries = Object.entries(messagesByHour).map(([hour, count]) => ({ 
-    hour: parseInt(hour), 
-    count 
-  }));
-  
-  // Sort by count in descending order
-  entries.sort((a, b) => b.count - a.count);
-  
-  // Return top 3 hours with most messages
-  return entries.slice(0, 3).map(entry => entry.hour);
-}
-
-/**
- * Calculate message distribution by day of week
- */
-function calculateWeekdayActivity(messages: ChatMessage[]): Record<string, number> {
-  const weekdays = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
-  const counts: Record<string, number> = {};
-  
-  // Initialize counts
-  weekdays.forEach(day => {
-    counts[day] = 0;
-  });
-  
-  // Count messages by day of week
-  messages.forEach(message => {
-    try {
-      const date = new Date(formatDateTimeForParsing(message.date, message.time));
-      const weekday = weekdays[date.getDay()];
-      counts[weekday]++;
-    } catch (error) {
-      // Skip messages with invalid dates
-    }
-  });
-  
-  return counts;
-}
-
-/**
- * Calculate topic changes in conversation
- */
-function calculateTopicChanges(messages: ChatMessage[]): number {
-  if (messages.length < 3) return 0;
-  
-  let topicChanges = 0;
-  const windowSize = 5; // Messages to consider for topic cohesion
-  
-  for (let i = windowSize; i < messages.length; i += windowSize) {
-    const prevWindow = messages.slice(i - windowSize, i);
-    const nextWindow = messages.slice(i, Math.min(i + windowSize, messages.length));
-    
-    if (nextWindow.length >= 3) { // Enough messages to constitute a window
-      const prevTopics = extractTopics(prevWindow, 5);
-      const nextTopics = extractTopics(nextWindow, 5);
-      
-      // Calculate topic overlap
-      const overlap = prevTopics.filter(topic => nextTopics.includes(topic)).length;
-      const overlapRatio = overlap / Math.max(Math.min(prevTopics.length, nextTopics.length), 1);
-      
-      // Low overlap means topic change
-      if (overlapRatio < 0.3) {
-        topicChanges++;
-      }
-    }
-  }
-  
-  return topicChanges;
-}
-
-/**
  * Analyze chat data and produce statistics with enhanced analytics
  */
 export function analyzeChat(messages: ChatMessage[]): ChatStats {
@@ -1021,33 +740,6 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     avgTopicDuration: 0,
     mostDiscussedTopics: [] as string[],
     leastRespondedTopics: [] as string[]
-  };
-  
-  // Initialize new extended analytics
-  const groupDynamics = {
-    dominantParticipants: [] as string[],
-    peripheralParticipants: [] as string[],
-    subgroups: [] as Array<{
-      participants: string[];
-      interactionStrength: number;
-    }>,
-    cohesion: 0
-  };
-  
-  const conversationPatterns = {
-    peakTimes: [] as number[],
-    weekdayActivity: {} as Record<string, number>,
-    burstsVsSteady: 0,
-    cyclicalPatterns: [] as Array<{
-      period: string;
-      confidence: number;
-    }>
-  };
-  
-  const languageComplexity = {
-    averageComplexity: 0,
-    trendOverTime: 'stable' as 'increasing' | 'decreasing' | 'stable',
-    participantComparison: {} as Record<string, number>
   };
   
   participants.forEach(participant => {
@@ -1126,35 +818,13 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
         open: 0,
         closed: 0,
         rhetorical: 0
-      },
-      // New analytics
-      communicationStyle: {
-        primary: 'mixed',
-        assertiveScore: 0,
-        aggressiveScore: 0,
-        passiveScore: 0,
-        passiveAggressiveScore: 0,
-        formality: 0.5,
-        directness: 0.5
-      },
-      intimacyAnalysis: {
-        level: 'medium',
-        score: 0.5,
-        indicators: [],
-        consistency: 0.5
-      },
-      replySpeed: {
-        average: 0,
-        trend: 'stable'
-      },
-      emotionalIntelligence: 0.5,
-      conversationInfluence: 0.5
+      }
     };
     
     // Initialize relationships map for each participant
     relationshipDynamics[participant] = {};
     
-    // Create relationship dynamics entries for each pair of participants
+    // Create relationship dynamics entry for each pair of participants
     participants.forEach(otherParticipant => {
       if (participant !== otherParticipant) {
         relationshipDynamics[participant][otherParticipant] = {
@@ -1164,17 +834,352 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
           conflictResolution: 0,
           supportiveness: 0,
           reciprocity: 0,
-          topicAlignment: 0,
-          intimacyLevel: 0,
-          communicationCompatibility: 0,
-          trustIndicators: 0
+          topicAlignment: 0
         };
       }
     });
   });
   
-  // Initialize media stats
-  const totalMediaStats: MediaStats = {
+  // Process each message
+  sortedMessages.forEach(message => {
+    const sender = message.sender;
+    const stats = participantStats[sender];
+    
+    // Count message
+    stats.messageCount++;
+    
+    // Word count
+    stats.wordCount += message.wordCount;
+    
+    // Character count
+    stats.characterCount += message.characterCount;
+    
+    // Emoji count
+    stats.emojiCount += message.emojiCount;
+    
+    // Longest message
+    if (message.content.length > stats.longestMessage.length) {
+      stats.longestMessage = {
+        content: message.content,
+        length: message.content.length
+      };
+    }
+    
+    // Media count
+    if (message.isMedia) {
+      stats.mediaCount++;
+      stats.mediaStats.total++;
+      
+      // Count by media type
+      switch (message.mediaType) {
+        case 'image':
+          stats.mediaStats.images++;
+          break;
+        case 'video':
+          stats.mediaStats.videos++;
+          break;
+        case 'document':
+          stats.mediaStats.documents++;
+          break;
+        case 'link':
+          stats.mediaStats.links++;
+          break;
+        case 'sticker':
+          stats.mediaStats.stickers++;
+          break;
+        case 'gif':
+          stats.mediaStats.gifs++;
+          break;
+        case 'audio':
+          stats.mediaStats.audio++;
+          break;
+      }
+    }
+    
+    // Extract emojis
+    const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/ug;
+    const emojis = message.content.match(emojiRegex) || [];
+    emojis.forEach(emoji => {
+      stats.uniqueEmojis.add(emoji);
+    });
+    
+    // Sentiment analysis
+    const sentiment = analyzeSentiment(message.content);
+    stats.sentiment.averageScore += sentiment.score;
+    
+    if (sentiment.score > 0.1) {
+      stats.sentiment.positiveMsgCount++;
+      if (sentiment.score > stats.sentiment.mostPositiveMessage.score) {
+        stats.sentiment.mostPositiveMessage = {
+          content: message.content,
+          score: sentiment.score
+        };
+      }
+    } else if (sentiment.score < -0.1) {
+      stats.sentiment.negativeMsgCount++;
+      if (sentiment.score < stats.sentiment.mostNegativeMessage.score) {
+        stats.sentiment.mostNegativeMessage = {
+          content: message.content,
+          score: sentiment.score
+        };
+      }
+    } else {
+      stats.sentiment.neutralMsgCount++;
+    }
+    
+    // Manipulation detection
+    const manipulation = detectManipulation(message.content);
+    if (manipulation.score > 0) {
+      stats.manipulation.averageScore += manipulation.score;
+      stats.manipulation.messageCount++;
+      
+      if (manipulation.instances.length > 0) {
+        stats.manipulation.examples.push({
+          content: message.content,
+          score: manipulation.score,
+          instances: manipulation.instances
+        });
+      }
+    }
+    
+    // Question analysis
+    const questionTypes = analyzeQuestions([message]);
+    stats.questionTypes.total += questionTypes.total;
+    stats.questionTypes.open += questionTypes.open;
+    stats.questionTypes.closed += questionTypes.closed;
+    stats.questionTypes.rhetorical += questionTypes.rhetorical;
+  });
+  
+  // Calculate averages and finalize stats
+  let totalMessages = sortedMessages.length;
+  let totalWords = 0;
+  let totalCharacters = 0;
+  let totalEmojis = 0;
+  const allEmojis = new Set<string>();
+  const messagesByDate: Record<string, number> = {};
+  const messagesByHour: Record<number, number> = {};
+  let mostActiveDate = '';
+  let mostActiveCount = 0;
+  let mostActiveHour = 0;
+  let mostActiveHourCount = 0;
+  
+  // Response time calculations
+  const responseTimes = calculateResponseTimes(sortedMessages);
+  
+  // Gather data for overall chat statistics
+  participants.forEach(participant => {
+    const stats = participantStats[participant];
+    
+    // Sum up totals
+    totalWords += stats.wordCount;
+    totalCharacters += stats.characterCount;
+    totalEmojis += stats.emojiCount;
+    stats.uniqueEmojis.forEach(emoji => allEmojis.add(emoji));
+    
+    // Calculate averages
+    if (stats.messageCount > 0) {
+      stats.averageMessageLength = stats.characterCount / stats.messageCount;
+      stats.sentiment.averageScore /= stats.messageCount;
+      if (stats.manipulation.messageCount > 0) {
+        stats.manipulation.averageScore /= stats.manipulation.messageCount;
+      }
+    }
+    
+    // Process response times
+    const pResponseTimes = responseTimes[participant] || [];
+    if (pResponseTimes.length > 0) {
+      stats.responseTime.average = pResponseTimes.reduce((sum, time) => sum + time, 0) / pResponseTimes.length;
+      stats.responseTime.fastest = Math.min(...pResponseTimes);
+      stats.responseTime.slowest = Math.max(...pResponseTimes);
+      stats.conversationStyle.avgResponseTime = stats.responseTime.average;
+    }
+    
+    // Calculate vocabulary complexity
+    const participantMessages = sortedMessages.filter(m => m.sender === participant);
+    stats.vocabularyComplexity = analyzeLexicalComplexity(participantMessages);
+    
+    // Extract top subjects
+    stats.topSubjects = extractTopics(participantMessages, 5);
+    
+    // Determine conversation style
+    stats.personalityInsights.conversationStyle = determineCommunicationStyle(participantMessages);
+    
+    // Top emojis
+    const emojiMap = new Map<string, number>();
+    stats.uniqueEmojis.forEach(emoji => {
+      emojiMap.set(emoji, 0);
+    });
+    participantMessages.forEach(message => {
+      const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/ug;
+      const matches = message.content.match(emojiRegex);
+      if (matches) {
+        matches.forEach(emoji => {
+          emojiMap.set(emoji, (emojiMap.get(emoji) || 0) + 1);
+        });
+      }
+    });
+    stats.topEmojis = getTopEmojis(emojiMap, 5);
+    
+    // Message frequency by date and hour
+    participantMessages.forEach(message => {
+      const date = message.date;
+      const hour = parseInt(message.time.split(':')[0]);
+      
+      // Store in participant stats
+      stats.conversationStyle.messageFrequency[date] = (stats.conversationStyle.messageFrequency[date] || 0) + 1;
+      
+      // Store in overall stats
+      messagesByDate[date] = (messagesByDate[date] || 0) + 1;
+      messagesByHour[hour] = (messagesByHour[hour] || 0) + 1;
+      
+      // Track most active
+      if (messagesByDate[date] > mostActiveCount) {
+        mostActiveDate = date;
+        mostActiveCount = messagesByDate[date];
+      }
+      
+      if (messagesByHour[hour] > mostActiveHourCount) {
+        mostActiveHour = hour;
+        mostActiveHourCount = messagesByHour[hour];
+      }
+    });
+    
+    // Most active time of day
+    stats.conversationStyle.mostActiveTimeOfDay = Object.entries(messagesByHour)
+      .reduce((max, [hour, count]) => (count > max.count ? { hour: parseInt(hour), count } : max), { hour: 0, count: 0 })
+      .hour;
+    
+    // Calculate personality insights
+    const dominanceFactors = [
+      stats.messageCount / Math.max(totalMessages, 1) * 3, // Message volume
+      stats.averageMessageLength / 100, // Message length
+      stats.questionTypes.total / Math.max(stats.messageCount, 1) * 0.5 // Questioning behavior
+    ];
+    stats.personalityInsights.dominance = Math.min(dominanceFactors.reduce((sum, factor) => sum + factor, 0) / dominanceFactors.length, 1);
+    
+    // Openness score based on vocabulary and topic diversity
+    stats.personalityInsights.openness = stats.vocabularyComplexity;
+    
+    // Attentiveness based on response time and question frequency
+    const responseTimeFactor = stats.responseTime.average ? Math.max(0, 1 - stats.responseTime.average / (24 * 60)) : 0.5;
+    stats.personalityInsights.attentiveness = (responseTimeFactor + (stats.questionTypes.total / Math.max(stats.messageCount, 1) * 3)) / 2;
+    
+    // Emotional expressiveness
+    stats.personalityInsights.emotionalExpressiveness = Math.min(
+      (stats.emojiCount / Math.max(stats.messageCount, 1) * 2) + 
+      (Math.abs(stats.sentiment.averageScore) * 1.5),
+      1
+    );
+    
+    // Communication strengths and weaknesses
+    const strengths: string[] = [];
+    const weaknesses: string[] = [];
+    
+    if (stats.vocabularyComplexity > 0.6) strengths.push('Geniş Kelime Hazinesi');
+    if (stats.vocabularyComplexity < 0.3) weaknesses.push('Sınırlı Kelime Hazinesi');
+    
+    if (stats.personalityInsights.attentiveness > 0.7) strengths.push('Yüksek Dikkat');
+    if (stats.personalityInsights.attentiveness < 0.3) weaknesses.push('Düşük Dikkat');
+    
+    if (stats.personalityInsights.emotionalExpressiveness > 0.7) strengths.push('Duygusal İfade');
+    if (stats.personalityInsights.emotionalExpressiveness < 0.3) weaknesses.push('Duygusal Kısıtlılık');
+    
+    if (stats.responseTime.average && stats.responseTime.average < 30) strengths.push('Hızlı Yanıt');
+    if (stats.responseTime.average && stats.responseTime.average > 120) weaknesses.push('Geç Yanıt');
+    
+    if (stats.manipulation.averageScore < 0.1) strengths.push('Dürüst İletişim');
+    if (stats.manipulation.averageScore > 0.4) weaknesses.push('Manipülatif Eğilim');
+    
+    stats.personalityInsights.communicationStrengths = strengths;
+    stats.personalityInsights.communicationWeaknesses = weaknesses;
+  });
+  
+  // Relationship dynamics analysis
+  for (let i = 0; i < participants.length; i++) {
+    for (let j = i + 1; j < participants.length; j++) {
+      const participant1 = participants[i];
+      const participant2 = participants[j];
+      
+      const dynamics = analyzeRelationshipDynamics(sortedMessages, participant1, participant2);
+      
+      relationshipDynamics[participant1][participant2] = dynamics;
+      
+      // Mirror the dynamics for the other direction but invert power balance
+      relationshipDynamics[participant2][participant1] = {
+        ...dynamics,
+        powerBalance: -dynamics.powerBalance
+      };
+    }
+  }
+  
+  // Topics analysis
+  const topics = extractTopics(sortedMessages, 10);
+  conversationFlow.mostDiscussedTopics = topics;
+  
+  // Calculate conversation quality metrics
+  let totalResponseTime = 0;
+  let responseCount = 0;
+  let totalPowerImbalance = 0;
+  let relationshipCount = 0;
+  
+  Object.values(relationshipDynamics).forEach(relationships => {
+    Object.values(relationships).forEach(dynamics => {
+      totalPowerImbalance += Math.abs(dynamics.powerBalance);
+      relationshipCount++;
+    });
+  });
+  
+  // Overall engagement: based on message density and response times
+  const messageDensity = totalMessages / durationDays;
+  const avgResponseTime = responseCount > 0 ? totalResponseTime / responseCount : null;
+  const responseTimeFactor = avgResponseTime ? Math.max(0, 1 - avgResponseTime / (24 * 60)) : 0.5;
+  
+  conversationQuality.engagement = Math.min(
+    (Math.log(messageDensity + 1) / Math.log(50)) * 0.7 + (responseTimeFactor * 0.3),
+    1
+  );
+  
+  // Conversation depth: based on message length and vocabulary complexity
+  const avgMessageLength = totalMessages > 0 ? totalCharacters / totalMessages : 0;
+  const overallVocabularyComplexity = Object.values(participantStats).reduce(
+    (sum, stats) => sum + stats.vocabularyComplexity,
+    0
+  ) / participants.length;
+  
+  conversationQuality.depth = (
+    Math.min(avgMessageLength / 100, 1) * 0.5 +
+    overallVocabularyComplexity * 0.5
+  );
+  
+  // Conversation balance: based on message distribution and power balance
+  const messageDistribution = participants.map(p => participantStats[p].messageCount / totalMessages);
+  const distributionVariance = calculateVariance(messageDistribution);
+  const powerBalanceFactor = relationshipCount > 0 ? 1 - (totalPowerImbalance / relationshipCount) : 0.5;
+  
+  conversationQuality.balance = (
+    (1 - distributionVariance * 2) * 0.6 +
+    powerBalanceFactor * 0.4
+  );
+  
+  // Relationship growth: tentative measure based on sentiment change over time
+  // This would need more sophisticated analysis for accurate results
+  const firstHalfMessages = sortedMessages.slice(0, Math.floor(sortedMessages.length / 2));
+  const secondHalfMessages = sortedMessages.slice(Math.floor(sortedMessages.length / 2));
+  
+  const firstHalfSentiment = firstHalfMessages.reduce(
+    (sum, msg) => sum + analyzeSentiment(msg.content).score,
+    0
+  ) / Math.max(firstHalfMessages.length, 1);
+  
+  const secondHalfSentiment = secondHalfMessages.reduce(
+    (sum, msg) => sum + analyzeSentiment(msg.content).score,
+    0
+  ) / Math.max(secondHalfMessages.length, 1);
+  
+  conversationQuality.growth = clamp(secondHalfSentiment - firstHalfSentiment, -1, 1);
+  
+  // Finalize media stats
+  const overallMediaStats: MediaStats = {
     total: 0,
     images: 0,
     videos: 0,
@@ -1185,456 +1190,71 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     audio: 0
   };
   
-  // Track message counts by date and hour
-  const messagesByDate: Record<string, number> = {};
-  const messagesByHour: Record<number, number> = {};
-  const messagesByParticipantByDate: Record<string, Record<string, number>> = {};
+  Object.values(participantStats).forEach(stats => {
+    overallMediaStats.total += stats.mediaStats.total;
+    overallMediaStats.images += stats.mediaStats.images;
+    overallMediaStats.videos += stats.mediaStats.videos;
+    overallMediaStats.documents += stats.mediaStats.documents;
+    overallMediaStats.links += stats.mediaStats.links;
+    overallMediaStats.stickers += stats.mediaStats.stickers;
+    overallMediaStats.gifs += stats.mediaStats.gifs;
+    overallMediaStats.audio += stats.mediaStats.audio;
+  });
   
-  // Initialize counters for sentiment analysis
-  let totalSentimentScore = 0;
-  let totalPositiveMessages = 0;
-  let totalNegativeMessages = 0;
-  let totalNeutralMessages = 0;
-  
-  // Initialize counters for manipulation analysis
-  const manipulationByType: Record<string, number> = {};
-  let totalManipulationScore = 0;
-  let totalManipulativeMessages = 0;
-  let mostManipulativeParticipant = '';
+  // Find most manipulative participant
+  let mostManipulative = '';
   let highestManipulationScore = 0;
   
-  // Gather response times for participants
-  const responseTimes = calculateResponseTimes(sortedMessages);
+  Object.entries(participantStats).forEach(([participant, stats]) => {
+    if (stats.manipulation.averageScore > highestManipulationScore) {
+      highestManipulationScore = stats.manipulation.averageScore;
+      mostManipulative = participant;
+    }
+  });
   
-  // Analyze messages
-  sortedMessages.forEach((message, index) => {
-    const { sender, content, date, time } = message;
-    const messageLength = content.length;
-    const words = content.trim().split(/\s+/).filter(w => w.length > 0);
-    const messageDate = date;
-    const messageHour = parseInt(time.split(':')[0]);
-    
-    // Update participant stats
-    const participant = participantStats[sender];
-    participant.messageCount++;
-    participant.wordCount += words.length;
-    participant.characterCount += messageLength;
-    
-    // Track message length
-    if (messageLength > participant.longestMessage.length) {
-      participant.longestMessage = {
-        content,
-        length: messageLength
-      };
-    }
-    
-    // Track dates and hours
-    messagesByDate[messageDate] = (messagesByDate[messageDate] || 0) + 1;
-    messagesByHour[messageHour] = (messagesByHour[messageHour] || 0) + 1;
-    
-    if (!messagesByParticipantByDate[sender]) {
-      messagesByParticipantByDate[sender] = {};
-    }
-    messagesByParticipantByDate[sender][messageDate] = 
-      (messagesByParticipantByDate[sender][messageDate] || 0) + 1;
-    
-    // Extract media (simple detection)
-    if (content.includes('<Media omitted>') || content.includes('<Media excluded>')) {
-      participant.mediaCount++;
-      totalMediaStats.total++;
-      
-      // Simple heuristics to guess media type
-      if (content.toLowerCase().includes('image')) {
-        participant.mediaStats.images++;
-        totalMediaStats.images++;
-      } else if (content.toLowerCase().includes('video')) {
-        participant.mediaStats.videos++;
-        totalMediaStats.videos++;
-      } else if (content.toLowerCase().includes('document') || content.toLowerCase().includes('pdf')) {
-        participant.mediaStats.documents++;
-        totalMediaStats.documents++;
-      } else if (content.toLowerCase().includes('gif')) {
-        participant.mediaStats.gifs++;
-        totalMediaStats.gifs++;
-      } else if (content.toLowerCase().includes('sticker')) {
-        participant.mediaStats.stickers++;
-        totalMediaStats.stickers++;
-      } else if (content.toLowerCase().includes('audio')) {
-        participant.mediaStats.audio++;
-        totalMediaStats.audio++;
-      } else {
-        // Default to image if we can't determine
-        participant.mediaStats.images++;
-        totalMediaStats.images++;
-      }
-    }
-    
-    // Extract emojis
-    const emojiMap = countEmojis([message]);
-    emojiMap.forEach((count, emoji) => {
-      participant.emojiCount += count;
-      participant.uniqueEmojis.add(emoji);
-    });
-    
-    // Simple link detection
-    const linkMatches = content.match(/https?:\/\/[^\s]+/g);
-    if (linkMatches) {
-      participant.mediaStats.links += linkMatches.length;
-      totalMediaStats.links += linkMatches.length;
-      totalMediaStats.total += linkMatches.length;
-    }
-    
-    // Sentiment analysis
-    const sentimentResult = analyzeSentiment(content);
-    totalSentimentScore += sentimentResult.score;
-    
-    if (sentimentResult.dominant === 'positive') {
-      totalPositiveMessages++;
-      participant.sentiment.positiveMsgCount++;
-      
-      if (sentimentResult.score > participant.sentiment.mostPositiveMessage.score) {
-        participant.sentiment.mostPositiveMessage = {
-          content,
-          score: sentimentResult.score
-        };
-      }
-    } else if (sentimentResult.dominant === 'negative') {
-      totalNegativeMessages++;
-      participant.sentiment.negativeMsgCount++;
-      
-      if (sentimentResult.score < participant.sentiment.mostNegativeMessage.score) {
-        participant.sentiment.mostNegativeMessage = {
-          content,
-          score: sentimentResult.score
-        };
-      }
-    } else {
-      totalNeutralMessages++;
-      participant.sentiment.neutralMsgCount++;
-    }
-    
-    // Manipulation analysis
-    const manipulationResult = detectManipulation(content);
-    participant.manipulation.averageScore += manipulationResult.score;
-    totalManipulationScore += manipulationResult.score;
-    
-    if (manipulationResult.score > 0.2) { // Only count messages with significant manipulation
-      totalManipulativeMessages++;
-      participant.manipulation.messageCount++;
-      
-      // Track by type
-      manipulationResult.instances.forEach(instance => {
+  // Count manipulation types
+  const manipulationByType: Record<string, number> = {};
+  
+  Object.values(participantStats).forEach(stats => {
+    stats.manipulation.examples.forEach(example => {
+      example.instances.forEach(instance => {
         manipulationByType[instance.type] = (manipulationByType[instance.type] || 0) + 1;
       });
-      
-      // Store examples of highly manipulative messages
-      if (manipulationResult.score > 0.5 && participant.manipulation.examples.length < 5) {
-        participant.manipulation.examples.push({
-          content,
-          score: manipulationResult.score,
-          instances: manipulationResult.instances
-        });
-      }
-      
-      // Track the most manipulative participant
-      const avgManipulationScore = participant.manipulation.averageScore / Math.max(participant.manipulation.messageCount, 1);
-      if (avgManipulationScore > highestManipulationScore && participant.manipulation.messageCount >= 5) {
-        highestManipulationScore = avgManipulationScore;
-        mostManipulativeParticipant = sender;
-      }
-    }
-    
-    // Analyze communication style
-    participant.communicationStyle = analyzeCommunicationStyle(content);
-    
-    // Analyze intimacy
-    participant.intimacyAnalysis = analyzeIntimacy(content);
-    
-    // Calculate vocabulary complexity
-    participant.vocabularyComplexity = analyzeLexicalComplexity([message]);
-    
-    // Extract topics
-    participant.topSubjects = extractTopics([message], 10);
-    
-    // Analyze questions
-    const questionAnalysis = analyzeQuestions([message]);
-    participant.questionTypes.total += questionAnalysis.total;
-    participant.questionTypes.open += questionAnalysis.open;
-    participant.questionTypes.closed += questionAnalysis.closed;
-    participant.questionTypes.rhetorical += questionAnalysis.rhetorical;
-    
-    // Update conversation quality metrics
-    // This is a simplified example - in a real app, we'd have more sophisticated analysis
-    conversationQuality.depth += (content.length > 100 ? 0.01 : 0);
-    conversationQuality.engagement += (index > 0 && sortedMessages[index-1].sender !== sender ? 0.01 : 0);
-  });
-  
-  // Process response times
-  participants.forEach(participant => {
-    const times = responseTimes[participant] || [];
-    if (times.length > 0) {
-      const avg = times.reduce((sum, time) => sum + time, 0) / times.length;
-      const sorted = [...times].sort((a, b) => a - b);
-      
-      participantStats[participant].responseTime = {
-        average: avg,
-        fastest: sorted[0],
-        slowest: sorted[sorted.length - 1]
-      };
-      
-      // Update conversation style with response time
-      participantStats[participant].conversationStyle.avgResponseTime = avg;
-      
-      // Calculate reply speed metrics
-      participantStats[participant].replySpeed = {
-        average: avg,
-        trend: 'stable' // For simplicity; in a real app this would be calculated over time
-      };
-    }
-  });
-  
-  // Calculate averages and finalize stats
-  participants.forEach(participant => {
-    const stats = participantStats[participant];
-    
-    // Message length average
-    stats.averageMessageLength = stats.characterCount / Math.max(stats.messageCount, 1);
-    stats.conversationStyle.avgMessageLength = stats.averageMessageLength;
-    
-    // Top emojis
-    const participantEmojiMap = new Map<string, number>();
-    stats.uniqueEmojis.forEach(emoji => {
-      participantEmojiMap.set(emoji, 0); // Initialize with 0
-    });
-    
-    // Count emoji occurrences for this participant
-    sortedMessages
-      .filter(m => m.sender === participant)
-      .forEach(message => {
-        const emojiMatches = message.content.match(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu);
-        if (emojiMatches) {
-          emojiMatches.forEach(emoji => {
-            participantEmojiMap.set(emoji, (participantEmojiMap.get(emoji) || 0) + 1);
-          });
-        }
-      });
-    
-    stats.topEmojis = getTopEmojis(participantEmojiMap, 5);
-    
-    // Sentiment average
-    stats.sentiment.averageScore = (stats.sentiment.positiveMsgCount - stats.sentiment.negativeMsgCount) / 
-      Math.max(stats.messageCount, 1);
-    
-    // Manipulation average (only for messages with manipulation detected)
-    if (stats.manipulation.messageCount > 0) {
-      stats.manipulation.averageScore /= stats.manipulation.messageCount;
-    }
-    
-    // Calculate personality insights
-    stats.personalityInsights = {
-      dominance: Math.min(stats.messageCount / (sortedMessages.length * 0.5), 1),
-      openness: Math.random() * 0.5 + 0.25, // simplified placeholder
-      attentiveness: calculateAttentiveness(sortedMessages, participant),
-      emotionalExpressiveness: (stats.sentiment.positiveMsgCount + stats.sentiment.negativeMsgCount) / Math.max(stats.messageCount, 1),
-      conversationStyle: determineCommunicationStyle(sortedMessages.filter(m => m.sender === participant)),
-      communicationStrengths: determineStrengths(stats),
-      communicationWeaknesses: determineWeaknesses(stats)
-    };
-    
-    // Calculate message frequency by hour
-    const hourCounts: Record<number, number> = {};
-    sortedMessages
-      .filter(m => m.sender === participant)
-      .forEach(message => {
-        const hour = parseInt(message.time.split(':')[0]);
-        hourCounts[hour] = (hourCounts[hour] || 0) + 1;
-      });
-    
-    stats.conversationStyle.messageFrequency = hourCounts;
-    
-    // Find most active hour
-    let maxMessages = 0;
-    let mostActiveHour = 0;
-    Object.entries(hourCounts).forEach(([hour, count]) => {
-      if (count > maxMessages) {
-        maxMessages = count;
-        mostActiveHour = parseInt(hour);
-      }
-    });
-    stats.conversationStyle.mostActiveTimeOfDay = mostActiveHour;
-    
-    // Calculate initiation rate
-    let initiationCount = 0;
-    let lastSender = '';
-    sortedMessages.forEach((message, index) => {
-      if (index === 0 || (lastSender !== participant && message.sender === participant)) {
-        initiationCount++;
-      }
-      lastSender = message.sender;
-    });
-    stats.conversationStyle.initiationRate = initiationCount / Math.max(stats.messageCount, 1);
-    
-    // Calculate consistency based on message frequency variance
-    const messageFrequency = Object.values(stats.conversationStyle.messageFrequency);
-    if (messageFrequency.length > 0) {
-      const mean = messageFrequency.reduce((sum, count) => sum + count, 0) / messageFrequency.length;
-      const variance = messageFrequency.reduce((sum, count) => sum + Math.pow(count - mean, 2), 0) / messageFrequency.length;
-      const stdDev = Math.sqrt(variance);
-      stats.conversationStyle.consistency = 1 - Math.min(stdDev / mean, 1);
-    }
-    
-    // Calculate top words used
-    const wordFrequency: Record<string, number> = {};
-    sortedMessages
-      .filter(m => m.sender === participant)
-      .forEach(message => {
-        const words = message.content.toLowerCase().split(/\s+/);
-        words.forEach(word => {
-          const cleanWord = word.replace(/[.,!?;:'"()]/g, '');
-          if (cleanWord.length > 3) {
-            wordFrequency[cleanWord] = (wordFrequency[cleanWord] || 0) + 1;
-          }
-        });
-      });
-    
-    stats.conversationStyle.topWordsUsed = Object.entries(wordFrequency)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([word, count]) => ({ word, count }));
-    
-    // Calculate question frequency
-    stats.conversationStyle.questionFrequency = stats.questionTypes.total / Math.max(stats.messageCount, 1);
-    
-    // Calculate emotional intelligence (simplified approximation)
-    stats.emotionalIntelligence = calculateEmotionalIntelligence(sortedMessages, participant);
-    
-    // Calculate conversation influence (simplified)
-    stats.conversationInfluence = calculateConversationInfluence(sortedMessages, participant);
-  });
-  
-  // Calculate most active date
-  let maxMessages = 0;
-  let mostActiveDate = startDate;
-  Object.entries(messagesByDate).forEach(([date, count]) => {
-    if (count > maxMessages) {
-      maxMessages = count;
-      mostActiveDate = date;
-    }
-  });
-  
-  // Calculate most active hour
-  let maxHourMessages = 0;
-  let mostActiveHour = 0;
-  Object.entries(messagesByHour).forEach(([hour, count]) => {
-    if (count > maxHourMessages) {
-      maxHourMessages = count;
-      mostActiveHour = parseInt(hour);
-    }
-  });
-  
-  // Analyze relationship dynamics between all pairs of participants
-  participants.forEach(participant1 => {
-    participants.forEach(participant2 => {
-      if (participant1 !== participant2) {
-        relationshipDynamics[participant1][participant2] = analyzeRelationshipDynamics(
-          sortedMessages, participant1, participant2
-        );
-      }
     });
   });
   
-  // Extract top topics from all messages
-  const topTopics = extractTopics(sortedMessages, 10);
-  
-  // Calculate conversation flow metrics
-  conversationFlow.mostDiscussedTopics = topTopics;
-  conversationFlow.topicChanges = calculateTopicChanges(sortedMessages);
-  conversationFlow.avgTopicDuration = sortedMessages.length / Math.max(conversationFlow.topicChanges, 1);
-  
-  // Calculate group dynamics
-  groupDynamics.dominantParticipants = participants
-    .filter(p => participantStats[p].personalityInsights.dominance > 0.6)
-    .slice(0, 3);
-  
-  groupDynamics.peripheralParticipants = participants
-    .filter(p => participantStats[p].personalityInsights.dominance < 0.3)
-    .slice(0, 3);
-  
-  // Simplified subgroup detection based on interaction patterns
-  if (participants.length > 3) {
-    const interactionMatrix: Record<string, Record<string, number>> = {};
-    participants.forEach(p1 => {
-      interactionMatrix[p1] = {};
-      participants.forEach(p2 => {
-        interactionMatrix[p1][p2] = 0;
-      });
-    });
-    
-    // Count direct replies between participants
-    for (let i = 1; i < sortedMessages.length; i++) {
-      const prevSender = sortedMessages[i-1].sender;
-      const currentSender = sortedMessages[i].sender;
-      if (prevSender !== currentSender) {
-        interactionMatrix[currentSender][prevSender]++;
-      }
-    }
-    
-    // Identify potential subgroups (simplified)
-    for (let i = 0; i < participants.length; i++) {
-      for (let j = i+1; j < participants.length; j++) {
-        const p1 = participants[i];
-        const p2 = participants[j];
-        const interactionStrength = 
-          (interactionMatrix[p1][p2] + interactionMatrix[p2][p1]) / sortedMessages.length;
-        
-        if (interactionStrength > 0.1) {
-          groupDynamics.subgroups.push({
-            participants: [p1, p2],
-            interactionStrength
-          });
-        }
-      }
-    }
-  }
-  
-  // Calculate group cohesion based on balanced participation
-  const messageCountStdDev = calculateStandardDeviation(
-    participants.map(p => participantStats[p].messageCount)
-  );
-  const maxMessages = Math.max(...participants.map(p => participantStats[p].messageCount));
-  groupDynamics.cohesion = 1 - (messageCountStdDev / maxMessages);
-  
-  // Calculate conversation patterns
-  conversationPatterns.peakTimes = findPeakTimes(messagesByHour);
-  conversationPatterns.weekdayActivity = calculateWeekdayActivity(sortedMessages);
-  
-  // Final assembly of chat stats
-  const totalUniqueEmojis = new Set<string>();
-  let totalEmojiCount = 0;
-  
-  participants.forEach(participant => {
-    const stats = participantStats[participant];
-    totalEmojiCount += stats.emojiCount;
-    stats.uniqueEmojis.forEach(emoji => totalUniqueEmojis.add(emoji));
-  });
-  
-  // Calculate language complexity metrics
-  languageComplexity.averageComplexity = participants.reduce(
-    (sum, p) => sum + participantStats[p].vocabularyComplexity, 
+  // Calculate overall sentiment percentages
+  const totalAnalyzedMessages = Object.values(participantStats).reduce(
+    (sum, stats) => sum + stats.sentiment.positiveMsgCount + stats.sentiment.negativeMsgCount + stats.sentiment.neutralMsgCount,
     0
-  ) / participants.length;
+  );
   
-  participants.forEach(p => {
-    languageComplexity.participantComparison[p] = participantStats[p].vocabularyComplexity;
-  });
+  const positiveCount = Object.values(participantStats).reduce(
+    (sum, stats) => sum + stats.sentiment.positiveMsgCount,
+    0
+  );
   
-  // Return the complete stats object
+  const negativeCount = Object.values(participantStats).reduce(
+    (sum, stats) => sum + stats.sentiment.negativeMsgCount,
+    0
+  );
+  
+  const neutralCount = Object.values(participantStats).reduce(
+    (sum, stats) => sum + stats.sentiment.neutralMsgCount,
+    0
+  );
+  
+  const sentimentScore = totalAnalyzedMessages > 0
+    ? (positiveCount - negativeCount) / totalAnalyzedMessages
+    : 0;
+  
+  // Assemble final result
   return {
-    totalMessages: sortedMessages.length,
-    totalWords: participants.reduce((sum, p) => sum + participantStats[p].wordCount, 0),
-    totalCharacters: participants.reduce((sum, p) => sum + participantStats[p].characterCount, 0),
-    totalEmojis: totalEmojiCount,
-    uniqueEmojis: totalUniqueEmojis,
+    totalMessages,
+    totalWords,
+    totalCharacters,
+    totalEmojis,
+    uniqueEmojis: allEmojis,
     participantStats,
     startDate,
     endDate,
@@ -1643,23 +1263,20 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     mostActiveHour,
     messagesByDate,
     messagesByHour,
-    mediaStats: totalMediaStats,
+    mediaStats: overallMediaStats,
     sentiment: {
-      overallScore: sortedMessages.length > 0 ? totalSentimentScore / sortedMessages.length : 0,
-      positivePercentage: sortedMessages.length > 0 ? (totalPositiveMessages / sortedMessages.length) * 100 : 0,
-      negativePercentage: sortedMessages.length > 0 ? (totalNegativeMessages / sortedMessages.length) * 100 : 0,
-      neutralPercentage: sortedMessages.length > 0 ? (totalNeutralMessages / sortedMessages.length) * 100 : 0
+      overallScore: sentimentScore,
+      positivePercentage: totalAnalyzedMessages > 0 ? (positiveCount / totalAnalyzedMessages) * 100 : 0,
+      negativePercentage: totalAnalyzedMessages > 0 ? (negativeCount / totalAnalyzedMessages) * 100 : 0,
+      neutralPercentage: totalAnalyzedMessages > 0 ? (neutralCount / totalAnalyzedMessages) * 100 : 0
     },
     manipulation: {
-      mostManipulative: mostManipulativeParticipant,
-      averageScore: totalManipulativeMessages > 0 ? totalManipulationScore / totalManipulativeMessages : 0,
+      mostManipulative,
+      averageScore: highestManipulationScore,
       messagesByType: manipulationByType
     },
     relationshipDynamics,
     conversationFlow,
-    conversationQuality,
-    groupDynamics,
-    conversationPatterns,
-    languageComplexity
+    conversationQuality
   };
 }

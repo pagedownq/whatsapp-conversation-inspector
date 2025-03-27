@@ -1,3 +1,4 @@
+
 import { ChatMessage, getParticipants } from './parseChat';
 import { analyzeSentiment, detectManipulation, SentimentResult, ManipulationResult } from './sentimentAnalysis';
 
@@ -821,4 +822,461 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     };
     
     // Initialize relationships map for each participant
-    relationshipDynamics
+    relationshipDynamics[participant] = {};
+    
+    // Create relationship dynamics entry for each pair of participants
+    participants.forEach(otherParticipant => {
+      if (participant !== otherParticipant) {
+        relationshipDynamics[participant][otherParticipant] = {
+          powerBalance: 0,
+          emotionalInvestment: 0,
+          conflictFrequency: 0,
+          conflictResolution: 0,
+          supportiveness: 0,
+          reciprocity: 0,
+          topicAlignment: 0
+        };
+      }
+    });
+  });
+  
+  // Process each message
+  sortedMessages.forEach(message => {
+    const sender = message.sender;
+    const stats = participantStats[sender];
+    
+    // Count message
+    stats.messageCount++;
+    
+    // Word count
+    stats.wordCount += message.wordCount;
+    
+    // Character count
+    stats.characterCount += message.characterCount;
+    
+    // Emoji count
+    stats.emojiCount += message.emojiCount;
+    
+    // Longest message
+    if (message.content.length > stats.longestMessage.length) {
+      stats.longestMessage = {
+        content: message.content,
+        length: message.content.length
+      };
+    }
+    
+    // Media count
+    if (message.isMedia) {
+      stats.mediaCount++;
+      stats.mediaStats.total++;
+      
+      // Count by media type
+      switch (message.mediaType) {
+        case 'image':
+          stats.mediaStats.images++;
+          break;
+        case 'video':
+          stats.mediaStats.videos++;
+          break;
+        case 'document':
+          stats.mediaStats.documents++;
+          break;
+        case 'link':
+          stats.mediaStats.links++;
+          break;
+        case 'sticker':
+          stats.mediaStats.stickers++;
+          break;
+        case 'gif':
+          stats.mediaStats.gifs++;
+          break;
+        case 'audio':
+          stats.mediaStats.audio++;
+          break;
+      }
+    }
+    
+    // Extract emojis
+    const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/ug;
+    const emojis = message.content.match(emojiRegex) || [];
+    emojis.forEach(emoji => {
+      stats.uniqueEmojis.add(emoji);
+    });
+    
+    // Sentiment analysis
+    const sentiment = analyzeSentiment(message.content);
+    stats.sentiment.averageScore += sentiment.score;
+    
+    if (sentiment.score > 0.1) {
+      stats.sentiment.positiveMsgCount++;
+      if (sentiment.score > stats.sentiment.mostPositiveMessage.score) {
+        stats.sentiment.mostPositiveMessage = {
+          content: message.content,
+          score: sentiment.score
+        };
+      }
+    } else if (sentiment.score < -0.1) {
+      stats.sentiment.negativeMsgCount++;
+      if (sentiment.score < stats.sentiment.mostNegativeMessage.score) {
+        stats.sentiment.mostNegativeMessage = {
+          content: message.content,
+          score: sentiment.score
+        };
+      }
+    } else {
+      stats.sentiment.neutralMsgCount++;
+    }
+    
+    // Manipulation detection
+    const manipulation = detectManipulation(message.content);
+    if (manipulation.score > 0) {
+      stats.manipulation.averageScore += manipulation.score;
+      stats.manipulation.messageCount++;
+      
+      if (manipulation.instances.length > 0) {
+        stats.manipulation.examples.push({
+          content: message.content,
+          score: manipulation.score,
+          instances: manipulation.instances
+        });
+      }
+    }
+    
+    // Question analysis
+    const questionTypes = analyzeQuestions([message]);
+    stats.questionTypes.total += questionTypes.total;
+    stats.questionTypes.open += questionTypes.open;
+    stats.questionTypes.closed += questionTypes.closed;
+    stats.questionTypes.rhetorical += questionTypes.rhetorical;
+  });
+  
+  // Calculate averages and finalize stats
+  let totalMessages = sortedMessages.length;
+  let totalWords = 0;
+  let totalCharacters = 0;
+  let totalEmojis = 0;
+  const allEmojis = new Set<string>();
+  const messagesByDate: Record<string, number> = {};
+  const messagesByHour: Record<number, number> = {};
+  let mostActiveDate = '';
+  let mostActiveCount = 0;
+  let mostActiveHour = 0;
+  let mostActiveHourCount = 0;
+  
+  // Response time calculations
+  const responseTimes = calculateResponseTimes(sortedMessages);
+  
+  // Gather data for overall chat statistics
+  participants.forEach(participant => {
+    const stats = participantStats[participant];
+    
+    // Sum up totals
+    totalWords += stats.wordCount;
+    totalCharacters += stats.characterCount;
+    totalEmojis += stats.emojiCount;
+    stats.uniqueEmojis.forEach(emoji => allEmojis.add(emoji));
+    
+    // Calculate averages
+    if (stats.messageCount > 0) {
+      stats.averageMessageLength = stats.characterCount / stats.messageCount;
+      stats.sentiment.averageScore /= stats.messageCount;
+      if (stats.manipulation.messageCount > 0) {
+        stats.manipulation.averageScore /= stats.manipulation.messageCount;
+      }
+    }
+    
+    // Process response times
+    const pResponseTimes = responseTimes[participant] || [];
+    if (pResponseTimes.length > 0) {
+      stats.responseTime.average = pResponseTimes.reduce((sum, time) => sum + time, 0) / pResponseTimes.length;
+      stats.responseTime.fastest = Math.min(...pResponseTimes);
+      stats.responseTime.slowest = Math.max(...pResponseTimes);
+      stats.conversationStyle.avgResponseTime = stats.responseTime.average;
+    }
+    
+    // Calculate vocabulary complexity
+    const participantMessages = sortedMessages.filter(m => m.sender === participant);
+    stats.vocabularyComplexity = analyzeLexicalComplexity(participantMessages);
+    
+    // Extract top subjects
+    stats.topSubjects = extractTopics(participantMessages, 5);
+    
+    // Determine conversation style
+    stats.personalityInsights.conversationStyle = determineCommunicationStyle(participantMessages);
+    
+    // Top emojis
+    const emojiMap = new Map<string, number>();
+    stats.uniqueEmojis.forEach(emoji => {
+      emojiMap.set(emoji, 0);
+    });
+    participantMessages.forEach(message => {
+      const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/ug;
+      const matches = message.content.match(emojiRegex);
+      if (matches) {
+        matches.forEach(emoji => {
+          emojiMap.set(emoji, (emojiMap.get(emoji) || 0) + 1);
+        });
+      }
+    });
+    stats.topEmojis = getTopEmojis(emojiMap, 5);
+    
+    // Message frequency by date and hour
+    participantMessages.forEach(message => {
+      const date = message.date;
+      const hour = parseInt(message.time.split(':')[0]);
+      
+      // Store in participant stats
+      stats.conversationStyle.messageFrequency[date] = (stats.conversationStyle.messageFrequency[date] || 0) + 1;
+      
+      // Store in overall stats
+      messagesByDate[date] = (messagesByDate[date] || 0) + 1;
+      messagesByHour[hour] = (messagesByHour[hour] || 0) + 1;
+      
+      // Track most active
+      if (messagesByDate[date] > mostActiveCount) {
+        mostActiveDate = date;
+        mostActiveCount = messagesByDate[date];
+      }
+      
+      if (messagesByHour[hour] > mostActiveHourCount) {
+        mostActiveHour = hour;
+        mostActiveHourCount = messagesByHour[hour];
+      }
+    });
+    
+    // Most active time of day
+    stats.conversationStyle.mostActiveTimeOfDay = Object.entries(messagesByHour)
+      .reduce((max, [hour, count]) => (count > max.count ? { hour: parseInt(hour), count } : max), { hour: 0, count: 0 })
+      .hour;
+    
+    // Calculate personality insights
+    const dominanceFactors = [
+      stats.messageCount / Math.max(totalMessages, 1) * 3, // Message volume
+      stats.averageMessageLength / 100, // Message length
+      stats.questionTypes.total / Math.max(stats.messageCount, 1) * 0.5 // Questioning behavior
+    ];
+    stats.personalityInsights.dominance = Math.min(dominanceFactors.reduce((sum, factor) => sum + factor, 0) / dominanceFactors.length, 1);
+    
+    // Openness score based on vocabulary and topic diversity
+    stats.personalityInsights.openness = stats.vocabularyComplexity;
+    
+    // Attentiveness based on response time and question frequency
+    const responseTimeFactor = stats.responseTime.average ? Math.max(0, 1 - stats.responseTime.average / (24 * 60)) : 0.5;
+    stats.personalityInsights.attentiveness = (responseTimeFactor + (stats.questionTypes.total / Math.max(stats.messageCount, 1) * 3)) / 2;
+    
+    // Emotional expressiveness
+    stats.personalityInsights.emotionalExpressiveness = Math.min(
+      (stats.emojiCount / Math.max(stats.messageCount, 1) * 2) + 
+      (Math.abs(stats.sentiment.averageScore) * 1.5),
+      1
+    );
+    
+    // Communication strengths and weaknesses
+    const strengths: string[] = [];
+    const weaknesses: string[] = [];
+    
+    if (stats.vocabularyComplexity > 0.6) strengths.push('Geniş Kelime Hazinesi');
+    if (stats.vocabularyComplexity < 0.3) weaknesses.push('Sınırlı Kelime Hazinesi');
+    
+    if (stats.personalityInsights.attentiveness > 0.7) strengths.push('Yüksek Dikkat');
+    if (stats.personalityInsights.attentiveness < 0.3) weaknesses.push('Düşük Dikkat');
+    
+    if (stats.personalityInsights.emotionalExpressiveness > 0.7) strengths.push('Duygusal İfade');
+    if (stats.personalityInsights.emotionalExpressiveness < 0.3) weaknesses.push('Duygusal Kısıtlılık');
+    
+    if (stats.responseTime.average && stats.responseTime.average < 30) strengths.push('Hızlı Yanıt');
+    if (stats.responseTime.average && stats.responseTime.average > 120) weaknesses.push('Geç Yanıt');
+    
+    if (stats.manipulation.averageScore < 0.1) strengths.push('Dürüst İletişim');
+    if (stats.manipulation.averageScore > 0.4) weaknesses.push('Manipülatif Eğilim');
+    
+    stats.personalityInsights.communicationStrengths = strengths;
+    stats.personalityInsights.communicationWeaknesses = weaknesses;
+  });
+  
+  // Relationship dynamics analysis
+  for (let i = 0; i < participants.length; i++) {
+    for (let j = i + 1; j < participants.length; j++) {
+      const participant1 = participants[i];
+      const participant2 = participants[j];
+      
+      const dynamics = analyzeRelationshipDynamics(sortedMessages, participant1, participant2);
+      
+      relationshipDynamics[participant1][participant2] = dynamics;
+      
+      // Mirror the dynamics for the other direction but invert power balance
+      relationshipDynamics[participant2][participant1] = {
+        ...dynamics,
+        powerBalance: -dynamics.powerBalance
+      };
+    }
+  }
+  
+  // Topics analysis
+  const topics = extractTopics(sortedMessages, 10);
+  conversationFlow.mostDiscussedTopics = topics;
+  
+  // Calculate conversation quality metrics
+  let totalResponseTime = 0;
+  let responseCount = 0;
+  let totalPowerImbalance = 0;
+  let relationshipCount = 0;
+  
+  Object.values(relationshipDynamics).forEach(relationships => {
+    Object.values(relationships).forEach(dynamics => {
+      totalPowerImbalance += Math.abs(dynamics.powerBalance);
+      relationshipCount++;
+    });
+  });
+  
+  // Overall engagement: based on message density and response times
+  const messageDensity = totalMessages / durationDays;
+  const avgResponseTime = responseCount > 0 ? totalResponseTime / responseCount : null;
+  const responseTimeFactor = avgResponseTime ? Math.max(0, 1 - avgResponseTime / (24 * 60)) : 0.5;
+  
+  conversationQuality.engagement = Math.min(
+    (Math.log(messageDensity + 1) / Math.log(50)) * 0.7 + (responseTimeFactor * 0.3),
+    1
+  );
+  
+  // Conversation depth: based on message length and vocabulary complexity
+  const avgMessageLength = totalMessages > 0 ? totalCharacters / totalMessages : 0;
+  const overallVocabularyComplexity = Object.values(participantStats).reduce(
+    (sum, stats) => sum + stats.vocabularyComplexity,
+    0
+  ) / participants.length;
+  
+  conversationQuality.depth = (
+    Math.min(avgMessageLength / 100, 1) * 0.5 +
+    overallVocabularyComplexity * 0.5
+  );
+  
+  // Conversation balance: based on message distribution and power balance
+  const messageDistribution = participants.map(p => participantStats[p].messageCount / totalMessages);
+  const distributionVariance = calculateVariance(messageDistribution);
+  const powerBalanceFactor = relationshipCount > 0 ? 1 - (totalPowerImbalance / relationshipCount) : 0.5;
+  
+  conversationQuality.balance = (
+    (1 - distributionVariance * 2) * 0.6 +
+    powerBalanceFactor * 0.4
+  );
+  
+  // Relationship growth: tentative measure based on sentiment change over time
+  // This would need more sophisticated analysis for accurate results
+  const firstHalfMessages = sortedMessages.slice(0, Math.floor(sortedMessages.length / 2));
+  const secondHalfMessages = sortedMessages.slice(Math.floor(sortedMessages.length / 2));
+  
+  const firstHalfSentiment = firstHalfMessages.reduce(
+    (sum, msg) => sum + analyzeSentiment(msg.content).score,
+    0
+  ) / Math.max(firstHalfMessages.length, 1);
+  
+  const secondHalfSentiment = secondHalfMessages.reduce(
+    (sum, msg) => sum + analyzeSentiment(msg.content).score,
+    0
+  ) / Math.max(secondHalfMessages.length, 1);
+  
+  conversationQuality.growth = clamp(secondHalfSentiment - firstHalfSentiment, -1, 1);
+  
+  // Finalize media stats
+  const overallMediaStats: MediaStats = {
+    total: 0,
+    images: 0,
+    videos: 0,
+    documents: 0,
+    links: 0,
+    stickers: 0,
+    gifs: 0,
+    audio: 0
+  };
+  
+  Object.values(participantStats).forEach(stats => {
+    overallMediaStats.total += stats.mediaStats.total;
+    overallMediaStats.images += stats.mediaStats.images;
+    overallMediaStats.videos += stats.mediaStats.videos;
+    overallMediaStats.documents += stats.mediaStats.documents;
+    overallMediaStats.links += stats.mediaStats.links;
+    overallMediaStats.stickers += stats.mediaStats.stickers;
+    overallMediaStats.gifs += stats.mediaStats.gifs;
+    overallMediaStats.audio += stats.mediaStats.audio;
+  });
+  
+  // Find most manipulative participant
+  let mostManipulative = '';
+  let highestManipulationScore = 0;
+  
+  Object.entries(participantStats).forEach(([participant, stats]) => {
+    if (stats.manipulation.averageScore > highestManipulationScore) {
+      highestManipulationScore = stats.manipulation.averageScore;
+      mostManipulative = participant;
+    }
+  });
+  
+  // Count manipulation types
+  const manipulationByType: Record<string, number> = {};
+  
+  Object.values(participantStats).forEach(stats => {
+    stats.manipulation.examples.forEach(example => {
+      example.instances.forEach(instance => {
+        manipulationByType[instance.type] = (manipulationByType[instance.type] || 0) + 1;
+      });
+    });
+  });
+  
+  // Calculate overall sentiment percentages
+  const totalAnalyzedMessages = Object.values(participantStats).reduce(
+    (sum, stats) => sum + stats.sentiment.positiveMsgCount + stats.sentiment.negativeMsgCount + stats.sentiment.neutralMsgCount,
+    0
+  );
+  
+  const positiveCount = Object.values(participantStats).reduce(
+    (sum, stats) => sum + stats.sentiment.positiveMsgCount,
+    0
+  );
+  
+  const negativeCount = Object.values(participantStats).reduce(
+    (sum, stats) => sum + stats.sentiment.negativeMsgCount,
+    0
+  );
+  
+  const neutralCount = Object.values(participantStats).reduce(
+    (sum, stats) => sum + stats.sentiment.neutralMsgCount,
+    0
+  );
+  
+  const sentimentScore = totalAnalyzedMessages > 0
+    ? (positiveCount - negativeCount) / totalAnalyzedMessages
+    : 0;
+  
+  // Assemble final result
+  return {
+    totalMessages,
+    totalWords,
+    totalCharacters,
+    totalEmojis,
+    uniqueEmojis: allEmojis,
+    participantStats,
+    startDate,
+    endDate,
+    duration: durationDays,
+    mostActiveDate,
+    mostActiveHour,
+    messagesByDate,
+    messagesByHour,
+    mediaStats: overallMediaStats,
+    sentiment: {
+      overallScore: sentimentScore,
+      positivePercentage: totalAnalyzedMessages > 0 ? (positiveCount / totalAnalyzedMessages) * 100 : 0,
+      negativePercentage: totalAnalyzedMessages > 0 ? (negativeCount / totalAnalyzedMessages) * 100 : 0,
+      neutralPercentage: totalAnalyzedMessages > 0 ? (neutralCount / totalAnalyzedMessages) * 100 : 0
+    },
+    manipulation: {
+      mostManipulative,
+      averageScore: highestManipulationScore,
+      messagesByType: manipulationByType
+    },
+    relationshipDynamics,
+    conversationFlow,
+    conversationQuality
+  };
+}

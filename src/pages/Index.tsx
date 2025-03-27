@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 import Header from '@/components/Header';
 import EmptyState from '@/components/EmptyState';
 import UploadSection from '@/components/UploadSection';
@@ -21,6 +22,7 @@ const Index = () => {
   const [analysisStats, setAnalysisStats] = useState<ChatStats | null>(null);
   const [activeTab, setActiveTab] = useState('upload');
   const [viewMode, setViewMode] = useState<'analysis' | 'past'>('analysis');
+  const [savingAnalysis, setSavingAnalysis] = useState(false);
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -92,6 +94,56 @@ const Index = () => {
     setViewMode('analysis');
   }, []);
 
+  const handleSaveAnalysis = useCallback(() => {
+    if (!analysisStats) return;
+    
+    try {
+      setSavingAnalysis(true);
+      
+      // Create analysis object
+      const newAnalysis = {
+        id: uuidv4(),
+        date: new Date().toISOString(),
+        title: `WhatsApp Analizi (${analysisStats.participantStats ? Object.keys(analysisStats.participantStats).length : 0} kişi)`,
+        participantCount: analysisStats.participantStats ? Object.keys(analysisStats.participantStats).length : 0,
+        messageCount: analysisStats.totalMessages,
+        duration: analysisStats.duration,
+        startDate: analysisStats.startDate,
+        endDate: analysisStats.endDate,
+        mostManipulative: analysisStats.manipulation.mostManipulative,
+        data: analysisStats
+      };
+      
+      // Get existing analyses
+      let existingAnalyses = [];
+      const storedAnalyses = localStorage.getItem('whatsapp-analyses');
+      if (storedAnalyses) {
+        existingAnalyses = JSON.parse(storedAnalyses);
+      }
+      
+      // Add new analysis
+      existingAnalyses.unshift(newAnalysis);
+      
+      // Save back to localStorage
+      localStorage.setItem('whatsapp-analyses', JSON.stringify(existingAnalyses));
+      
+      toast({
+        title: 'Analiz Kaydedildi',
+        description: 'Bu analiz geçmiş analizlere kaydedildi',
+      });
+      
+      setSavingAnalysis(false);
+    } catch (error) {
+      console.error('Error saving analysis:', error);
+      toast({
+        title: 'Kaydetme Hatası',
+        description: 'Analiz kaydedilirken bir hata oluştu',
+        variant: 'destructive'
+      });
+      setSavingAnalysis(false);
+    }
+  }, [analysisStats, toast]);
+
   const renderContent = () => {
     if (uploadMode) {
       return (
@@ -124,6 +176,13 @@ const Index = () => {
       <>
         <div className="flex items-center justify-between mb-6">          
           <div className="flex space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={handleSaveAnalysis}
+              disabled={savingAnalysis}
+            >
+              {savingAnalysis ? 'Kaydediliyor...' : 'Analizi Kaydet'}
+            </Button>
             <Button onClick={handleReset} variant="outline">
               Yeni Analiz
             </Button>

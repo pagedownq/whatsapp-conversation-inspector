@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, ChevronRight, Trash2, Clock, Calendar, User, Brain, BookOpen, Sparkles } from 'lucide-react';
+import { MessageSquare, ChevronRight, Trash2, Clock, Calendar, User, Brain } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ChatStats } from '@/utils/analyzeChat';
 
@@ -163,19 +163,8 @@ const PastAnalyses: React.FC<PastAnalysesProps> = ({ onSelectAnalysis }) => {
                   <span className="text-sm">{analysis.duration} Gün</span>
                 </div>
                 <div className="flex items-center">
-                  <BookOpen className="h-4 w-4 mr-2 text-primary/70" />
-                  <span className="text-sm">Genişletilmiş Analiz</span>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center">
-                  <Brain className="h-4 w-4 mr-2 text-purple-500" />
-                  <span className="text-sm text-purple-500 font-medium">En Manipülatif: {analysis.mostManipulative}</span>
-                </div>
-                <div className="flex items-center">
-                  <Sparkles className="h-4 w-4 mr-2 text-amber-500" />
-                  <span className="text-sm text-amber-500 font-medium">Yeni İlişki Analizi</span>
+                  <Brain className="h-4 w-4 mr-2 text-primary/70" />
+                  <span className="text-sm text-purple-500 font-medium truncate">{analysis.mostManipulative}</span>
                 </div>
               </div>
               

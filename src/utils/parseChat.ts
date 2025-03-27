@@ -1,4 +1,3 @@
-
 // Chat message type
 export interface ChatMessage {
   timestamp: string;
@@ -164,4 +163,26 @@ export function getParticipants(messages: ChatMessage[]): string[] {
 export function extractEmojis(text: string): string[] {
   const matches = text.match(emojiRegex);
   return matches || [];
+}
+
+/**
+ * Format date and time for parsing
+ */
+export function formatDateTimeForParsing(date: string, time: string): string {
+  // Convert DD.MM.YYYY or DD/MM/YYYY to MM/DD/YYYY for proper parsing
+  const normalized = date.replace(/[/\-]/g, '.');
+  const parts = normalized.split('.');
+  
+  if (parts.length === 3) {
+    // Handle 2-digit years
+    if (parts[2].length === 2) {
+      const year = parseInt(parts[2]);
+      parts[2] = (year < 50 ? '20' : '19') + parts[2];
+    }
+    
+    // Convert DD.MM.YYYY to MM/DD/YYYY format for Date parsing
+    return `${parts[1]}/${parts[0]}/${parts[2]} ${time}`;
+  }
+  
+  return `${date} ${time}`; // Return original format if we can't parse it
 }

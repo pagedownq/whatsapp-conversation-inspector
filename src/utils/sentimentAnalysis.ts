@@ -131,7 +131,7 @@ const intimacyPatterns = {
   ],
   low: [
     'iyi', 'tamam', 'peki', 'görüşürüz', 'sonra', 'belki', 'bilmiyorum',
-    'ok', 'fine', 'later', 'see you', 'perhaps', 'don't know'
+    'ok', 'fine', 'later', 'see you', 'perhaps', 'don\'t know'
   ]
 };
 

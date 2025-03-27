@@ -1,128 +1,59 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
 import { MessageSquare, ChevronRight, Trash2, Clock, Calendar, User, Brain, BookOpen, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ChatStats } from '@/utils/analyzeChat';
-
-interface PastAnalysis {
-  id: string;
-  date: string;
-  title: string;
-  participantCount: number;
-  messageCount: number;
-  duration: number;
-  startDate: string;
-  endDate: string;
-  mostManipulative: string;
-  data: ChatStats;
-}
 
 interface PastAnalysesProps {
   onSelectAnalysis: (data: ChatStats) => void;
 }
 
 const PastAnalyses: React.FC<PastAnalysesProps> = ({ onSelectAnalysis }) => {
-  const [analyses, setAnalyses] = useState<PastAnalysis[]>([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadPastAnalyses();
-  }, []);
+  // Inform user that saving functionality has been removed
+  React.useEffect(() => {
+    toast({
+      title: 'Bilgi',
+      description: 'Analiz kaydetme özelliği kaldırılmıştır. Bu ekranda örnek analizler gösterilmektedir.',
+    });
+  }, [toast]);
 
-  const loadPastAnalyses = () => {
-    try {
-      setLoading(true);
-      
-      // Load from localStorage
-      const storedAnalyses = localStorage.getItem('whatsapp-analyses');
-      if (storedAnalyses) {
-        const parsedAnalyses = JSON.parse(storedAnalyses);
-        setAnalyses(parsedAnalyses);
-      }
-      
-      setLoading(false);
-    } catch (error) {
-      console.error('Failed to load past analyses:', error);
-      toast({
-        title: 'Hata',
-        description: 'Geçmiş analizler yüklenemedi',
-        variant: 'destructive',
-      });
-      setLoading(false);
+  // Static example analyses
+  const exampleAnalyses = [
+    {
+      id: '1',
+      title: 'Örnek Sohbet Analizi',
+      date: new Date().toISOString(),
+      participantCount: 2,
+      messageCount: 356,
+      duration: 45,
+      startDate: '10.05.2023',
+      endDate: '24.06.2023',
+      mostManipulative: 'Ali',
+      data: {} as ChatStats // This would be populated with example data if needed
+    },
+    {
+      id: '2',
+      title: 'İş Grubu Analizi',
+      date: new Date().toISOString(),
+      participantCount: 8,
+      messageCount: 1243,
+      duration: 120,
+      startDate: '01.01.2023',
+      endDate: '01.05.2023',
+      mostManipulative: 'Mehmet',
+      data: {} as ChatStats // This would be populated with example data if needed
     }
-  };
+  ];
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
-    // Prevent event bubbling to parent elements
-    e.stopPropagation();
-    
-    try {
-      const updatedAnalyses = analyses.filter(a => a.id !== id);
-      setAnalyses(updatedAnalyses);
-      localStorage.setItem('whatsapp-analyses', JSON.stringify(updatedAnalyses));
-      
-      toast({
-        title: 'Başarılı',
-        description: 'Analiz silindi',
-      });
-    } catch (error) {
-      console.error('Failed to delete analysis:', error);
-      toast({
-        title: 'Hata',
-        description: 'Analiz silinemedi',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleSelectAnalysis = (analysis: PastAnalysis) => {
-    // Check if the data property exists and it's a valid object
-    if (analysis && analysis.data) {
-      onSelectAnalysis(analysis.data);
-    } else {
-      toast({
-        title: 'Hata',
-        description: 'Analiz verisi eksik veya hatalı',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('tr-TR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+  const handleSampleSelect = () => {
+    toast({
+      title: 'Bilgi',
+      description: 'Örnek analiz seçildi. Gerçek analiz için WhatsApp sohbet dosyası yüklemeniz gerekmektedir.',
     });
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-      </div>
-    );
-  }
-
-  if (analyses.length === 0) {
-    return (
-      <div className="text-center py-10">
-        <div className="bg-secondary/30 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
-          <Clock className="h-8 w-8 text-muted-foreground" />
-        </div>
-        <h3 className="text-lg font-medium mb-2">Henüz analiz yok</h3>
-        <p className="text-muted-foreground">
-          WhatsApp sohbet dosyası yükleyerek analizler oluşturabilirsiniz.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <motion.div 
@@ -131,21 +62,24 @@ const PastAnalyses: React.FC<PastAnalysesProps> = ({ onSelectAnalysis }) => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <h2 className="text-2xl font-bold">Geçmiş Analizler</h2>
+      <h2 className="text-2xl font-bold">Örnek Analizler</h2>
+      <p className="text-muted-foreground mb-4">
+        Bu ekranda gerçek analizler yerine örnek analizler gösterilmektedir. Gerçek bir analiz yapmak için yeni bir WhatsApp sohbet dosyası yükleyin.
+      </p>
       
       <div className="grid gap-4">
-        {analyses.map(analysis => (
+        {exampleAnalyses.map(analysis => (
           <motion.div 
             key={analysis.id}
             className="border border-border rounded-xl overflow-hidden bg-card shadow-sm hover:shadow-md transition-shadow cursor-pointer"
             whileHover={{ y: -2 }}
-            onClick={() => handleSelectAnalysis(analysis)}
+            onClick={handleSampleSelect}
           >
             <div className="p-4">
               <div className="flex justify-between items-start mb-3">
                 <h3 className="font-medium text-lg">{analysis.title}</h3>
                 <div className="text-xs text-muted-foreground">
-                  {formatDate(analysis.date)}
+                  Örnek Analiz
                 </div>
               </div>
               
@@ -179,24 +113,13 @@ const PastAnalyses: React.FC<PastAnalysesProps> = ({ onSelectAnalysis }) => {
                 </div>
               </div>
               
-              <div className="flex justify-between">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={(e) => handleDelete(analysis.id, e)}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Sil
-                </Button>
-                
-                <Button
-                  size="sm"
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+              <div className="flex justify-end">
+                <button
+                  className="inline-flex items-center px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
                 >
                   <span>Görüntüle</span>
                   <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
+                </button>
               </div>
             </div>
           </motion.div>

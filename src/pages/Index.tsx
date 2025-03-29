@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +7,7 @@ import EmptyState from '@/components/EmptyState';
 import UploadSection from '@/components/UploadSection';
 import AnalysisDisplay from '@/components/AnalysisDisplay';
 import PastAnalyses from '@/components/PastAnalyses';
+import ConsentDialog from '@/components/ConsentDialog';
 import { parseChat, ChatMessage } from '@/utils/parseChat';
 import { analyzeChat, ChatStats } from '@/utils/analyzeChat';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -26,8 +26,29 @@ const Index = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const navigate = useNavigate();
+  
+  const [hasConsent, setHasConsent] = useState<boolean>(false);
+  const [showConsentDialog, setShowConsentDialog] = useState<boolean>(true);
+  
+  useEffect(() => {
+    const userConsent = localStorage.getItem('user-consent');
+    if (userConsent === 'accepted') {
+      setHasConsent(true);
+      setShowConsentDialog(false);
+    }
+  }, []);
+  
+  const handleAcceptConsent = useCallback(() => {
+    localStorage.setItem('user-consent', 'accepted');
+    setHasConsent(true);
+    setShowConsentDialog(false);
+    
+    toast({
+      title: 'Kabul Edildi',
+      description: 'Çerez ve veri kullanım koşullarını kabul ettiniz. Uygulamayı kullanabilirsiniz.',
+    });
+  }, [toast]);
 
-  // Analyze messages - wrapped in useCallback to prevent unnecessary recreations
   const analyzeMessages = useCallback((messages: ChatMessage[]) => {
     try {
       const stats = analyzeChat(messages);
@@ -43,7 +64,6 @@ const Index = () => {
   }, [toast]);
 
   useEffect(() => {
-    // Check if there's an active analysis to display
     if (parsedMessages.length > 0 && !uploadMode) {
       analyzeMessages(parsedMessages);
     }
@@ -100,7 +120,6 @@ const Index = () => {
     try {
       setSavingAnalysis(true);
       
-      // Create analysis object
       const newAnalysis = {
         id: uuidv4(),
         date: new Date().toISOString(),
@@ -114,17 +133,14 @@ const Index = () => {
         data: analysisStats
       };
       
-      // Get existing analyses
       let existingAnalyses = [];
       const storedAnalyses = localStorage.getItem('whatsapp-analyses');
       if (storedAnalyses) {
         existingAnalyses = JSON.parse(storedAnalyses);
       }
       
-      // Add new analysis
       existingAnalyses.unshift(newAnalysis);
       
-      // Save back to localStorage
       localStorage.setItem('whatsapp-analyses', JSON.stringify(existingAnalyses));
       
       toast({
@@ -200,27 +216,36 @@ const Index = () => {
   };
 
   return (
-    <motion.div 
-      className="min-h-screen bg-background px-4 md:px-6"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Header />
+    <>
+      <ConsentDialog 
+        isOpen={showConsentDialog} 
+        onAccept={handleAcceptConsent} 
+      />
       
-      <main className="container mx-auto max-w-7xl pb-16">
-        {renderContent()}
-      </main>
-      
-      <motion.footer
-        className="py-6 text-center text-sm text-muted-foreground"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5, duration: 0.3 }}
-      >
-        <p>WhatsApp Analyzer &copy; {new Date().getFullYear()}</p>
-      </motion.footer>
-    </motion.div>
+      {hasConsent && (
+        <motion.div 
+          className="min-h-screen bg-background px-4 md:px-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Header />
+          
+          <main className="container mx-auto max-w-7xl pb-16">
+            {renderContent()}
+          </main>
+          
+          <motion.footer
+            className="py-6 text-center text-sm text-muted-foreground"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.3 }}
+          >
+            <p>WhatsApp Analyzer &copy; {new Date().getFullYear()}</p>
+          </motion.footer>
+        </motion.div>
+      )}
+    </>
   );
 };
 

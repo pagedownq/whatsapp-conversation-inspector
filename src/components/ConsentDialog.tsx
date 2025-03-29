@@ -3,6 +3,7 @@ import React from 'react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ConsentDialogProps {
   isOpen: boolean;
@@ -19,9 +20,12 @@ const ConsentDialog: React.FC<ConsentDialogProps> = ({ isOpen, onAccept }) => {
 
   return (
     <AlertDialog open={isOpen}>
-      <AlertDialogContent className="max-w-2xl">
+      <AlertDialogContent className="max-w-2xl max-h-[50vh] md:max-h-[60vh]">
         <AlertDialogHeader>
           <AlertDialogTitle>Çerez ve Veri Kullanım Bilgilendirmesi</AlertDialogTitle>
+        </AlertDialogHeader>
+        
+        <ScrollArea className="flex-1 h-[30vh] md:h-[40vh] pr-4">
           <AlertDialogDescription className="text-left space-y-4">
             <p>
               Bu web sitesi, WhatsApp sohbet analizlerini gerçekleştirmek için tasarlanmıştır. Size en iyi deneyimi sunabilmek için aşağıdaki bilgilendirmeyi lütfen okuyun:
@@ -54,10 +58,21 @@ const ConsentDialog: React.FC<ConsentDialogProps> = ({ isOpen, onAccept }) => {
               Bu siteyi kullanabilmek için lütfen yukarıdaki bilgilendirmeyi kabul edin. Kabul etmezseniz siteyi kullanamayacaksınız.
             </p>
           </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={handleReject}>Reddet</AlertDialogCancel>
-          <AlertDialogAction onClick={onAccept}>Kabul Ediyorum</AlertDialogAction>
+        </ScrollArea>
+        
+        <AlertDialogFooter className="mt-4 flex flex-col sm:flex-row sm:justify-end gap-2">
+          <AlertDialogCancel 
+            onClick={handleReject} 
+            className="w-full sm:w-auto"
+          >
+            Reddet
+          </AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={onAccept} 
+            className="w-full sm:w-auto"
+          >
+            Kabul Ediyorum
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

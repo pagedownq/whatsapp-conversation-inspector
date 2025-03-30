@@ -4,17 +4,15 @@ import React, { useEffect } from 'react';
 interface AdSenseAdProps {
   className?: string;
   style?: React.CSSProperties;
-  adSlot: string;
-  adFormat?: string;
-  fullWidthResponsive?: boolean;
+  adSlot?: string;
+  isInArticle?: boolean;
 }
 
 const AdSenseAd: React.FC<AdSenseAdProps> = ({ 
   className = '', 
   style = {}, 
-  adSlot, 
-  adFormat = 'auto',
-  fullWidthResponsive = true
+  adSlot = "7771145390",
+  isInArticle = false
 }) => {
   useEffect(() => {
     try {
@@ -29,14 +27,25 @@ const AdSenseAd: React.FC<AdSenseAdProps> = ({
 
   return (
     <div className={`adsense-container ${className}`} style={style}>
-      <ins
-        className="adsbygoogle"
-        style={{ display: 'block' }}
-        data-ad-client="ca-pub-3777090766109762"
-        data-ad-slot={adSlot}
-        data-ad-format={adFormat}
-        data-full-width-responsive={fullWidthResponsive}
-      ></ins>
+      {isInArticle ? (
+        <ins
+          className="adsbygoogle"
+          style={{ display: 'block', textAlign: 'center' }}
+          data-ad-layout="in-article"
+          data-ad-format="fluid"
+          data-ad-client="ca-pub-3777090766109762"
+          data-ad-slot={adSlot}
+        ></ins>
+      ) : (
+        <ins
+          className="adsbygoogle"
+          style={{ display: 'block' }}
+          data-ad-client="ca-pub-3777090766109762"
+          data-ad-slot={adSlot}
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        ></ins>
+      )}
     </div>
   );
 };

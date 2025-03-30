@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -185,7 +184,7 @@ const Index = () => {
               
               {/* Üst Banner Reklam */}
               <div className="mt-8 mb-4 w-full">
-                <AdSenseAd adSlot="1234567890" className="mx-auto" />
+                <AdSenseAd className="mx-auto" isInArticle={true} />
               </div>
             </>
           )}
@@ -216,7 +215,7 @@ const Index = () => {
         
         {/* Analiz Öncesi Reklam */}
         <div className="mb-6 w-full">
-          <AdSenseAd adSlot="2345678901" className="mx-auto" />
+          <AdSenseAd className="mx-auto" isInArticle={true} />
         </div>
         
         {analysisStats && (
@@ -228,7 +227,7 @@ const Index = () => {
         
         {/* Analiz Sonrası Reklam */}
         <div className="mt-8 w-full">
-          <AdSenseAd adSlot="3456789012" className="mx-auto" />
+          <AdSenseAd className="mx-auto" isInArticle={true} />
         </div>
       </>
     );

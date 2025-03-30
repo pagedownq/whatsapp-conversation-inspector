@@ -47,6 +47,14 @@ const ConsentDialog: React.FC<ConsentDialogProps> = ({ isOpen, onAccept }) => {
               <li>Hiçbir kişisel veri çerezlerde saklanmaz.</li>
             </ul>
             
+            <h3 className="text-md font-semibold">Reklam Kullanımı:</h3>
+            <ul className="list-disc pl-6 space-y-1">
+              <li>Bu site, Google AdSense reklamlarını göstermek için çerezler kullanabilir.</li>
+              <li>Google ve diğer üçüncü taraf reklam sunucuları, bu site üzerindeki davranışlarınıza dayalı olarak reklamlar sunmak için çerezler kullanabilir.</li>
+              <li>Reklam çerezleri kişiselleştirilmiş reklamlar sunmak için kullanılabilir.</li>
+              <li>Google AdSense, yeniden hedefleme çerezleri kullanabilir.</li>
+            </ul>
+            
             <h3 className="text-md font-semibold">Yasal Dayanak:</h3>
             <p>
               Bu uygulama, KVKK (Kişisel Verilerin Korunması Kanunu) ve GDPR (Genel Veri Koruma Yönetmeliği) ilkelerine uygun olarak tasarlanmıştır. 

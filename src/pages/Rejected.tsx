@@ -10,9 +10,12 @@ const Rejected = () => {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="text-center max-w-md">
         <h1 className="text-3xl font-bold mb-6">Erişim Reddedildi</h1>
-        <p className="mb-8">
+        <p className="mb-4">
           Bu siteyi kullanabilmek için çerez ve veri kullanım koşullarını kabul etmeniz gerekmektedir. 
-          Bu koşulları kabul etmeden siteyi kullanmanız mümkün değildir.
+          Bu koşullar, Google AdSense reklamlarının düzgün çalışması için gereklidir.
+        </p>
+        <p className="mb-8">
+          Kabul etmeden siteyi kullanmanız mümkün değildir.
         </p>
         <Button onClick={() => navigate('/')}>
           Tekrar Dene

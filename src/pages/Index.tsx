@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +9,7 @@ import UploadSection from '@/components/UploadSection';
 import AnalysisDisplay from '@/components/AnalysisDisplay';
 import PastAnalyses from '@/components/PastAnalyses';
 import ConsentDialog from '@/components/ConsentDialog';
+import AdSenseAd from '@/components/AdSenseAd';
 import { parseChat, ChatMessage } from '@/utils/parseChat';
 import { analyzeChat, ChatStats } from '@/utils/analyzeChat';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -165,20 +167,27 @@ const Index = () => {
       return (
         <>
           {!uploadVisible && (
-            <Tabs defaultValue={activeTab} className="w-full max-w-4xl mx-auto" onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="upload">Yeni Analiz</TabsTrigger>
-                <TabsTrigger value="past">Geçmiş Analizler</TabsTrigger>
-              </TabsList>
+            <>
+              <Tabs defaultValue={activeTab} className="w-full max-w-4xl mx-auto" onValueChange={setActiveTab}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="upload">Yeni Analiz</TabsTrigger>
+                  <TabsTrigger value="past">Geçmiş Analizler</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="upload">
+                  <EmptyState onUploadClick={handleUploadClick} />
+                </TabsContent>
+                
+                <TabsContent value="past">
+                  <PastAnalyses onSelectAnalysis={handleSelectAnalysis} />
+                </TabsContent>
+              </Tabs>
               
-              <TabsContent value="upload">
-                <EmptyState onUploadClick={handleUploadClick} />
-              </TabsContent>
-              
-              <TabsContent value="past">
-                <PastAnalyses onSelectAnalysis={handleSelectAnalysis} />
-              </TabsContent>
-            </Tabs>
+              {/* Üst Banner Reklam */}
+              <div className="mt-8 mb-4 w-full">
+                <AdSenseAd adSlot="1234567890" className="mx-auto" />
+              </div>
+            </>
           )}
           
           {uploadVisible && (
@@ -205,12 +214,22 @@ const Index = () => {
           </div>
         </div>
         
+        {/* Analiz Öncesi Reklam */}
+        <div className="mb-6 w-full">
+          <AdSenseAd adSlot="2345678901" className="mx-auto" />
+        </div>
+        
         {analysisStats && (
           <AnalysisDisplay 
             chatData={parsedMessages}
             onReset={handleReset}
           />
         )}
+        
+        {/* Analiz Sonrası Reklam */}
+        <div className="mt-8 w-full">
+          <AdSenseAd adSlot="3456789012" className="mx-auto" />
+        </div>
       </>
     );
   };

@@ -9,6 +9,8 @@ import AnalysisDisplay from '@/components/AnalysisDisplay';
 import PastAnalyses from '@/components/PastAnalyses';
 import ConsentDialog from '@/components/ConsentDialog';
 import AdSenseAd from '@/components/AdSenseAd';
+import CookieConsent from '@/components/CookieConsent';
+import Footer from '@/components/Footer';
 import { parseChat, ChatMessage } from '@/utils/parseChat';
 import { analyzeChat, ChatStats } from '@/utils/analyzeChat';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -30,12 +32,18 @@ const Index = () => {
   
   const [hasConsent, setHasConsent] = useState<boolean>(false);
   const [showConsentDialog, setShowConsentDialog] = useState<boolean>(true);
+  const [cookieConsent, setCookieConsent] = useState<'all' | 'essential' | null>(null);
   
   useEffect(() => {
     const userConsent = localStorage.getItem('user-consent');
     if (userConsent === 'accepted') {
       setHasConsent(true);
       setShowConsentDialog(false);
+    }
+    
+    const cookiePreference = localStorage.getItem('cookie-consent');
+    if (cookiePreference === 'all' || cookiePreference === 'essential') {
+      setCookieConsent(cookiePreference);
     }
   }, []);
   
@@ -47,6 +55,24 @@ const Index = () => {
     toast({
       title: 'Kabul Edildi',
       description: 'Çerez ve veri kullanım koşullarını kabul ettiniz. Uygulamayı kullanabilirsiniz.',
+    });
+  }, [toast]);
+
+  const handleAcceptAllCookies = useCallback(() => {
+    setCookieConsent('all');
+    // Enable all cookies including advertising
+    toast({
+      title: 'Çerezler Kabul Edildi',
+      description: 'Tüm çerezler kabul edildi, size daha iyi bir deneyim sunabileceğiz.',
+    });
+  }, [toast]);
+  
+  const handleAcceptEssentialCookies = useCallback(() => {
+    setCookieConsent('essential');
+    // Only enable essential cookies
+    toast({
+      title: 'Temel Çerezler Kabul Edildi',
+      description: 'Sadece gerekli çerezler kabul edildi, bazı özellikler sınırlı olabilir.',
     });
   }, [toast]);
 
@@ -182,7 +208,6 @@ const Index = () => {
                 </TabsContent>
               </Tabs>
               
-              {/* Üst Banner Reklam */}
               <div className="mt-8 mb-4 w-full">
                 <AdSenseAd className="mx-auto" isInArticle={true} />
               </div>
@@ -213,7 +238,6 @@ const Index = () => {
           </div>
         </div>
         
-        {/* Analiz Öncesi Reklam */}
         <div className="mb-6 w-full">
           <AdSenseAd className="mx-auto" isInArticle={true} />
         </div>
@@ -225,7 +249,6 @@ const Index = () => {
           />
         )}
         
-        {/* Analiz Sonrası Reklam */}
         <div className="mt-8 w-full">
           <AdSenseAd className="mx-auto" isInArticle={true} />
         </div>
@@ -242,25 +265,23 @@ const Index = () => {
       
       {hasConsent && (
         <motion.div 
-          className="min-h-screen bg-background px-4 md:px-6"
+          className="min-h-screen flex flex-col bg-background px-4 md:px-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
           <Header />
           
-          <main className="container mx-auto max-w-7xl pb-16">
+          <main className="container mx-auto max-w-7xl flex-1 pb-16">
             {renderContent()}
           </main>
           
-          <motion.footer
-            className="py-6 text-center text-sm text-muted-foreground"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.3 }}
-          >
-            <p>WhatsApp Analyzer &copy; {new Date().getFullYear()}</p>
-          </motion.footer>
+          <Footer />
+          
+          <CookieConsent 
+            onAcceptAll={handleAcceptAllCookies}
+            onAcceptEssential={handleAcceptEssentialCookies}
+          />
         </motion.div>
       )}
     </>

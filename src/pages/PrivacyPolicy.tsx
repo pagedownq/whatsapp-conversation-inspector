@@ -130,8 +130,8 @@ const PrivacyPolicy = () => {
               </p>
               <p className="mt-2">
                 WhatsApp Analyzer <br />
-                E-posta: [E-posta adresiniz] <br />
-                Web: https://whatsapp-analyzer.com
+                E-posta: mehmetirem305@gmail.com <br />
+                Web: https://whatsapp-conversation-inspector.lovable.app
               </p>
             </section>
           </div>

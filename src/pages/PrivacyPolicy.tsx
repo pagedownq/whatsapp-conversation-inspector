@@ -129,9 +129,9 @@ const PrivacyPolicy = () => {
                 Bu gizlilik politikası hakkında sorularınız varsa, lütfen bize ulaşın:
               </p>
               <p className="mt-2">
-                WhatsApp Analyzer <br />
+                MGverse <br />
                 E-posta: mehmetirem305@gmail.com <br />
-                Web: https://whatsapp-conversation-inspector.lovable.app
+                Web: https://analizore.netlify.app/
               </p>
             </section>
           </div>
@@ -145,7 +145,7 @@ const PrivacyPolicy = () => {
       
       <footer className="py-6 border-t">
         <div className="container mx-auto max-w-7xl text-center text-sm text-muted-foreground">
-          <p>WhatsApp Analyzer &copy; {new Date().getFullYear()}</p>
+          <p>MGverse &copy; {new Date().getFullYear()}</p>
         </div>
       </footer>
     </motion.div>

@@ -11,7 +11,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
             <p className="text-sm text-muted-foreground">
-              WhatsApp Analyzer &copy; {currentYear} - <a href="https://whatsapp-conversation-inspector.lovable.app" className="hover:underline">https://whatsapp-conversation-inspector.lovable.app</a>
+              MGverse &copy; {currentYear} - <a href="https://analizore.netlify.app/" className="hover:underline">https://analizore.netlify.app/</a>
             </p>
           </div>
           

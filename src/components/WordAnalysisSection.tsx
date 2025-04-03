@@ -15,7 +15,7 @@ interface WordAnalysisSectionProps {
   fastestResponder: string;
   mostDisagreements: string;
   mostAgreements: string;
-  participantStats: any;
+  participantStats: Record<string, any>;
 }
 
 const WordBadge: React.FC<{ word: string; count: number; color?: string }> = ({ word, count, color = '#0088FE' }) => {
@@ -137,14 +137,23 @@ const WordAnalysisSection: React.FC<WordAnalysisSectionProps> = ({
         />
         <ConversationBehaviorCard
           title="En Uzun Mesajlar"
-          value={Object.entries(participantStats)
-            .sort((a, b) => b[1].averageMessageLength - a[1].averageMessageLength)[0][0]
+          value={
+            Object.entries(participantStats)
+              .sort((a, b) => {
+                const valA = a[1]?.averageMessageLength || 0;
+                const valB = b[1]?.averageMessageLength || 0;
+                return valB - valA;
+              })[0]?.[0] || ""
           }
           description="Bu kişi en uzun mesajları yazıyor"
           icon={<AlignLeft className="h-5 w-5 text-primary" />}
-          stat={Math.round(Object.values(participantStats)
-            .sort((a: any, b: any) => b.averageMessageLength - a.averageMessageLength)[0].averageMessageLength
-          )}
+          stat={
+            Math.round(
+              Object.values(participantStats)
+                .map((stat: any) => stat?.averageMessageLength || 0)
+                .sort((a, b) => b - a)[0] || 0
+            )
+          }
           suffix=" karakter"
         />
       </div>
@@ -172,7 +181,12 @@ const WordAnalysisSection: React.FC<WordAnalysisSectionProps> = ({
                 <>
                   <XAxis 
                     dataKey="word" 
-                    tick={{ fontSize: 12, angle: 45, textAnchor: 'start' }}
+                    tick={{ 
+                      fontSize: 12, 
+                      textAnchor: 'start',
+                      dy: 12,
+                      transform: "rotate(45)" 
+                    }}
                     height={70}
                   />
                   <YAxis />

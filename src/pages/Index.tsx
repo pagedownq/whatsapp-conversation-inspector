@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -60,6 +61,7 @@ const Index = () => {
 
   const handleAcceptAllCookies = useCallback(() => {
     setCookieConsent('all');
+    localStorage.setItem('cookie-consent', 'all');
     // Enable all cookies including advertising
     toast({
       title: 'Çerezler Kabul Edildi',
@@ -69,6 +71,7 @@ const Index = () => {
   
   const handleAcceptEssentialCookies = useCallback(() => {
     setCookieConsent('essential');
+    localStorage.setItem('cookie-consent', 'essential');
     // Only enable essential cookies
     toast({
       title: 'Temel Çerezler Kabul Edildi',
@@ -223,16 +226,17 @@ const Index = () => {
     
     return (
       <>
-        <div className="flex items-center justify-between mb-6">          
-          <div className="flex space-x-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-3">          
+          <div className="flex flex-wrap justify-center sm:justify-start gap-2 w-full sm:w-auto">
             <Button 
               variant="outline" 
               onClick={handleSaveAnalysis}
               disabled={savingAnalysis}
+              className="whitespace-nowrap"
             >
               {savingAnalysis ? 'Kaydediliyor...' : 'Analizi Kaydet'}
             </Button>
-            <Button onClick={handleReset} variant="outline">
+            <Button onClick={handleReset} variant="outline" className="whitespace-nowrap">
               Yeni Analiz
             </Button>
           </div>
@@ -265,14 +269,14 @@ const Index = () => {
       
       {hasConsent && (
         <motion.div 
-          className="min-h-screen flex flex-col bg-background px-4 md:px-6"
+          className="min-h-screen flex flex-col bg-background px-2 sm:px-4 md:px-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
           <Header />
           
-          <main className="container mx-auto max-w-7xl flex-1 pb-16">
+          <main className="container mx-auto max-w-7xl flex-1 pb-16 overflow-hidden">
             {renderContent()}
           </main>
           

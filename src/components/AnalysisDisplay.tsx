@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Line, LineChart } from 'recharts';
@@ -765,4 +766,45 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                         </div>
                         <div className="flex justify-between bg-secondary/30 p-2 rounded-lg">
                           <span>Videolar:</span>
-                          <span className="font-medium">{
+                          <span className="font-medium">{participantStats.mediaStats.videos}</span>
+                        </div>
+                        <div className="flex justify-between bg-secondary/30 p-2 rounded-lg">
+                          <span>Belgeler:</span>
+                          <span className="font-medium">{participantStats.mediaStats.documents}</span>
+                        </div>
+                        <div className="flex justify-between bg-secondary/30 p-2 rounded-lg">
+                          <span>Linkler:</span>
+                          <span className="font-medium">{participantStats.mediaStats.links}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {selectedTab === 'sentiment' && (
+            <div className="space-y-6">
+              {/* Sentiment analysis content would go here */}
+              <div className="flex items-center justify-center p-8 bg-card rounded-2xl">
+                <p className="text-muted-foreground">Bu sekme yakında kullanıma açılacak.</p>
+              </div>
+            </div>
+          )}
+          
+          {selectedTab === 'relationship' && (
+            <div className="space-y-6">
+              {/* Relationship analysis content would go here */}
+              <div className="flex items-center justify-center p-8 bg-card rounded-2xl">
+                <p className="text-muted-foreground">Bu sekme yakında kullanıma açılacak.</p>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
+    </motion.div>
+  );
+};
+
+export default AnalysisDisplay;

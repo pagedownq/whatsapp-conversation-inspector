@@ -1,13 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Line, LineChart } from 'recharts';
 import { useCountAnimation, useProgressAnimation } from '@/hooks/useAnimation';
 import { ChatMessage } from '@/utils/parseChat';
 import { analyzeChat, ChatStats, ParticipantStats } from '@/utils/analyzeChat';
-import { Clock, MessageSquare, Type, Smile, User, Calendar, Activity, BarChart2, Image, Video, FileText, Link, StickerIcon, Film, Mic, AlignJustify, HeartIcon, BrainIcon, ThumbsDownIcon, Brain, Heart, ChevronsRight } from 'lucide-react';
+import { Clock, MessageSquare, Type, Smile, User, Calendar, Activity, BarChart2, Image, Video, FileText, Link, StickerIcon, Film, Mic, AlignJustify, HeartIcon, BrainIcon, ThumbsDownIcon, Brain, Heart, ChevronsRight, MessageCircle, MessagesSquare } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getSentimentColor, getManipulationLevel, getManipulationTypeLabel } from '@/utils/sentimentAnalysis';
+import WordAnalysisSection from './WordAnalysisSection';
 
 interface AnalysisDisplayProps {
   chatData: ChatMessage[];
@@ -61,7 +61,7 @@ const MediaStatsCard: React.FC<{
 
 const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) => {
   const [stats, setStats] = useState<ChatStats | null>(null);
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'participants' | 'timeline' | 'media' | 'sentiment' | 'manipulation' | 'relationship'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'participants' | 'timeline' | 'media' | 'conversation' | 'sentiment' | 'relationship'>('overview');
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
   const [participantColors, setParticipantColors] = useState<Record<string, string>>({});
   const isMobile = useIsMobile();
@@ -236,6 +236,16 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
           } btn-transition`}
         >
           Medya Analizi
+        </button>
+        <button
+          onClick={() => setSelectedTab('conversation')}
+          className={`px-4 py-2 rounded-full whitespace-nowrap ${
+            selectedTab === 'conversation' 
+              ? 'bg-primary text-primary-foreground shadow-soft' 
+              : 'bg-secondary hover:bg-secondary/80'
+          } btn-transition`}
+        >
+          Konuşma Analizi
         </button>
         <button
           onClick={() => setSelectedTab('sentiment')}
@@ -784,21 +794,29 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
             </div>
           )}
           
+          {selectedTab === 'conversation' && (
+            <WordAnalysisSection
+              mostFrequentWords={stats.wordAnalysis.mostFrequentWords}
+              mostFrequentWordsByParticipant={stats.wordAnalysis.mostFrequentWordsByParticipant}
+              participantColors={participantColors}
+              mostInitiator={stats.conversationAnalysis.mostInitiator}
+              mostReplier={stats.conversationAnalysis.mostReplier}
+              fastestResponder={stats.conversationAnalysis.fastestResponder}
+              mostDisagreements={stats.conversationAnalysis.mostDisagreements}
+              mostAgreements={stats.conversationAnalysis.mostAgreements}
+              participantStats={stats.participantStats}
+            />
+          )}
+          
           {selectedTab === 'sentiment' && (
-            <div className="space-y-6">
-              {/* Sentiment analysis content would go here */}
-              <div className="flex items-center justify-center p-8 bg-card rounded-2xl">
-                <p className="text-muted-foreground">Bu sekme yakında kullanıma açılacak.</p>
-              </div>
+            <div className="flex items-center justify-center p-8 bg-card rounded-2xl">
+              <p className="text-muted-foreground">Bu sekme yakında kullanıma açılacak.</p>
             </div>
           )}
           
           {selectedTab === 'relationship' && (
-            <div className="space-y-6">
-              {/* Relationship analysis content would go here */}
-              <div className="flex items-center justify-center p-8 bg-card rounded-2xl">
-                <p className="text-muted-foreground">Bu sekme yakında kullanıma açılacak.</p>
-              </div>
+            <div className="flex items-center justify-center p-8 bg-card rounded-2xl">
+              <p className="text-muted-foreground">Bu sekme yakında kullanıma açılacak.</p>
             </div>
           )}
         </motion.div>

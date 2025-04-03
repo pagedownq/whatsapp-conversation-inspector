@@ -19,6 +19,21 @@ export interface MediaStats {
   audio: number;
 }
 
+export interface WordFrequency {
+  word: string;
+  count: number;
+}
+
+export interface ConversationPatterns {
+  conversationStarts: number;
+  replies: number;
+  avgReplyTime: number | null;
+  disagreementCount: number;
+  agreementCount: number;
+  mostUsedWords: WordFrequency[];
+  mostUsedStartWords: WordFrequency[];
+}
+
 export interface ParticipantStats {
   name: string;
   messageCount: number;
@@ -78,6 +93,7 @@ export interface ParticipantStats {
       isILoveYou: boolean;
     }>;
   };
+  conversationPatterns: ConversationPatterns;
 }
 
 export interface ChatStats {
@@ -123,6 +139,18 @@ export interface ChatStats {
       text: string;
       count: number;
     }>;
+  };
+  wordAnalysis: {
+    mostFrequentWords: WordFrequency[];
+    mostFrequentWordsByParticipant: Record<string, WordFrequency[]>;
+    mostFrequentStartWords: WordFrequency[];
+  };
+  conversationAnalysis: {
+    mostInitiator: string;
+    mostReplier: string;
+    fastestResponder: string;
+    mostDisagreements: string;
+    mostAgreements: string;
   };
 }
 
@@ -245,6 +273,130 @@ function formatDateTimeForParsing(date: string, time: string): string {
 }
 
 /**
+ * Analyze word frequency in messages
+ */
+function analyzeWordFrequency(messages: ChatMessage[]): Map<string, number> {
+  const wordMap = new Map<string, number>();
+  
+  messages.forEach(message => {
+    const words = message.content
+      .toLowerCase()
+      .replace(/[.,!?;:()[\]{}'"\/\\<>@#$%^&*_+=|~`-]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length >= 3);
+    
+    words.forEach(word => {
+      wordMap.set(word, (wordMap.get(word) || 0) + 1);
+    });
+  });
+  
+  return wordMap;
+}
+
+/**
+ * Detect conversation starts
+ */
+function detectConversationStarts(messages: ChatMessage[], participant: string): number {
+  let startCount = 0;
+  const timeThreshold = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+  
+  for (let i = 0; i < messages.length; i++) {
+    if (messages[i].sender !== participant) continue;
+    
+    if (i === 0) {
+      startCount++;
+      continue;
+    }
+    
+    try {
+      const currentTime = new Date(formatDateTimeForParsing(messages[i].date, messages[i].time)).getTime();
+      const prevTime = new Date(formatDateTimeForParsing(messages[i-1].date, messages[i-1].time)).getTime();
+      
+      if (currentTime - prevTime > timeThreshold) {
+        startCount++;
+      }
+    } catch (error) {
+      console.error("Error calculating conversation start:", error);
+    }
+  }
+  
+  return startCount;
+}
+
+/**
+ * Detect disagreements in messages
+ */
+function detectDisagreements(messages: ChatMessage[]): number {
+  const disagreementPatterns = [
+    /katılmıyorum/i, /aynı fikirde değilim/i, /hayır/i, /olmaz/i, /saçma/i,
+    /yanlış/i, /saçmalama/i, /mantıksız/i, /alakası yok/i, /itiraz/i,
+    /i disagree/i, /don't agree/i, /no way/i, /that's not right/i, /absolutely not/i,
+    /absolutely wrong/i, /aslında/i, /ama/i, /fakat/i, /lakin/i, /ancak/i
+  ];
+  
+  let count = 0;
+  
+  messages.forEach(message => {
+    const content = message.content.toLowerCase();
+    for (const pattern of disagreementPatterns) {
+      if (pattern.test(content)) {
+        count++;
+        break;
+      }
+    }
+  });
+  
+  return count;
+}
+
+/**
+ * Detect agreements in messages
+ */
+function detectAgreements(messages: ChatMessage[]): number {
+  const agreementPatterns = [
+    /katılıyorum/i, /aynı fikirdeyim/i, /evet/i, /olur/i, /tamam/i, /tabi/i,
+    /doğru/i, /kesinlikle/i, /haklısın/i, /mantıklı/i, /aynen/i, /agree/i,
+    /yes/i, /correct/i, /right/i, /indeed/i, /exactly/i, /sure/i, /ok/i
+  ];
+  
+  let count = 0;
+  
+  messages.forEach(message => {
+    const content = message.content.toLowerCase();
+    for (const pattern of agreementPatterns) {
+      if (pattern.test(content)) {
+        count++;
+        break;
+      }
+    }
+  });
+  
+  return count;
+}
+
+/**
+ * Get word frequency at the start of messages
+ */
+function getStartWordFrequency(messages: ChatMessage[]): Map<string, number> {
+  const wordMap = new Map<string, number>();
+  
+  messages.forEach(message => {
+    const words = message.content
+      .toLowerCase()
+      .replace(/[.,!?;:()[\]{}'"\/\\<>@#$%^&*_+=|~`-]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length >= 2);
+    
+    if (words.length > 0) {
+      const firstWord = words[0];
+      wordMap.set(firstWord, (wordMap.get(firstWord) || 0) + 1);
+    }
+  });
+  
+  return wordMap;
+}
+
+/**
  * Analyze chat data and produce statistics
  */
 export function analyzeChat(messages: ChatMessage[]): ChatStats {
@@ -322,6 +474,15 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
         count: 0,
         iLoveYouCount: 0,
         examples: []
+      },
+      conversationPatterns: {
+        conversationStarts: 0,
+        replies: 0,
+        avgReplyTime: null,
+        disagreementCount: 0,
+        agreementCount: 0,
+        mostUsedWords: [],
+        mostUsedStartWords: []
       }
     };
   });
@@ -591,6 +752,77 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     iLoveYouCounts[participant] = participantStats[participant].loveExpressions.iLoveYouCount;
   });
   
+  const allWordsFrequency = analyzeWordFrequency(messages);
+  const wordsByParticipant: Record<string, Map<string, number>> = {};
+  const startWordsFrequency = getStartWordFrequency(messages);
+  
+  participants.forEach(p => {
+    const participantMessages = messages.filter(m => m.sender === p);
+    wordsByParticipant[p] = analyzeWordFrequency(participantMessages);
+  });
+  
+  let mostInitiator = '';
+  let mostReplier = '';
+  let fastestResponder = '';
+  let mostDisagreements = '';
+  let mostAgreements = '';
+  
+  let maxStarts = -1;
+  let maxReplies = -1;
+  let minResponseTime = Number.MAX_VALUE;
+  let maxDisagreements = -1;
+  let maxAgreements = -1;
+  
+  participants.forEach(participant => {
+    const stats = participantStats[participant];
+    
+    if (stats.conversationPatterns.conversationStarts > maxStarts) {
+      maxStarts = stats.conversationPatterns.conversationStarts;
+      mostInitiator = participant;
+    }
+    
+    if (stats.conversationPatterns.replies > maxReplies) {
+      maxReplies = stats.conversationPatterns.replies;
+      mostReplier = participant;
+    }
+    
+    if (stats.responseTime.average !== null && stats.responseTime.average < minResponseTime) {
+      minResponseTime = stats.responseTime.average;
+      fastestResponder = participant;
+    }
+    
+    if (stats.conversationPatterns.disagreementCount > maxDisagreements) {
+      maxDisagreements = stats.conversationPatterns.disagreementCount;
+      mostDisagreements = participant;
+    }
+    
+    if (stats.conversationPatterns.agreementCount > maxAgreements) {
+      maxAgreements = stats.conversationPatterns.agreementCount;
+      mostAgreements = participant;
+    }
+  });
+  
+  // Get top words across all messages
+  const topWords = Array.from(allWordsFrequency.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 20)
+    .map(([word, count]) => ({ word, count }));
+  
+  // Get top start words across all messages
+  const topStartWords = Array.from(startWordsFrequency.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([word, count]) => ({ word, count }));
+  
+  // Get most frequent words by participant
+  const topWordsByParticipant: Record<string, WordFrequency[]> = {};
+  Object.entries(wordsByParticipant).forEach(([participant, wordFrequency]) => {
+    topWordsByParticipant[participant] = Array.from(wordFrequency.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([word, count]) => ({ word, count }));
+  });
+  
   return {
     totalMessages,
     totalWords,
@@ -629,6 +861,18 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
       mostRomantic: mostRomanticPerson,
       iLoveYouCount: iLoveYouCounts,
       mostCommonExpressions: sortedLoveExpressions
+    },
+    wordAnalysis: {
+      mostFrequentWords: topWords,
+      mostFrequentWordsByParticipant: topWordsByParticipant,
+      mostFrequentStartWords: topStartWords
+    },
+    conversationAnalysis: {
+      mostInitiator,
+      mostReplier,
+      fastestResponder,
+      mostDisagreements,
+      mostAgreements
     }
   };
 }

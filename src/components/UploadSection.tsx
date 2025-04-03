@@ -1,9 +1,12 @@
 
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Upload, X, AlertCircle, CheckCircle } from 'lucide-react';
+import { FileText, Upload, X, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Smartphone, FileZip, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import JSZip from 'jszip';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 interface UploadSectionProps {
   onFileProcessed: (content: string) => void;
@@ -13,6 +16,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,6 +144,148 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
     }
   };
 
+  const toggleGuide = () => {
+    setShowGuide(!showGuide);
+  };
+
+  const GuideSteps = () => (
+    <div className="mt-6 bg-secondary/70 rounded-xl p-4">
+      <h3 className="font-display font-medium text-lg mb-4 flex items-center gap-2 text-primary">
+        <Smartphone className="h-5 w-5" />
+        WhatsApp Sohbeti Nasıl Dışa Aktarılır?
+      </h3>
+      
+      <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
+        <AccordionItem value="item-1" className="border-b border-border/50">
+          <AccordionTrigger className="py-3 hover:no-underline">
+            <div className="flex items-center gap-3 text-left">
+              <div className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary font-medium text-sm">1</div>
+              <span>WhatsApp uygulamasında sohbeti açın</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pl-9">
+            <div className="rounded-lg overflow-hidden shadow-sm border border-border/50 bg-white">
+              <div className="bg-[#075E54] text-white p-3 flex items-center gap-2">
+                <Smartphone className="h-4 w-4" />
+                <div className="text-sm font-medium">WhatsApp Sohbet</div>
+              </div>
+              <div className="p-3 flex flex-col gap-2">
+                <div className="bg-[#DCF8C6] p-2 rounded-lg text-xs self-end max-w-[80%]">
+                  Merhaba, nasılsın?
+                </div>
+                <div className="bg-white border border-gray-200 p-2 rounded-lg text-xs self-start max-w-[80%]">
+                  İyiyim, teşekkür ederim. Sen nasılsın?
+                </div>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+        
+        <AccordionItem value="item-2" className="border-b border-border/50">
+          <AccordionTrigger className="py-3 hover:no-underline">
+            <div className="flex items-center gap-3 text-left">
+              <div className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary font-medium text-sm">2</div>
+              <span>Sohbetin sağ üst köşesindeki menü butonuna tıklayın</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pl-9">
+            <div className="rounded-lg overflow-hidden shadow-sm border border-border/50 bg-white">
+              <div className="bg-[#075E54] text-white p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Smartphone className="h-4 w-4" />
+                  <div className="text-sm font-medium">WhatsApp Sohbet</div>
+                </div>
+                <div className="flex items-center font-bold">⋮</div>
+              </div>
+              <div className="absolute right-10 top-[160px] bg-white shadow-lg rounded-md border border-gray-200 z-10">
+                <div className="py-2 px-4 text-xs hover:bg-gray-100">Kişiyi görüntüle</div>
+                <div className="py-2 px-4 text-xs hover:bg-gray-100">Medya, bağlantılar, ve belgeler</div>
+                <div className="py-2 px-4 text-xs hover:bg-gray-100">Ara</div>
+                <div className="py-2 px-4 text-xs hover:bg-gray-100">Bildirileri sessize al</div>
+                <div className="py-2 px-4 text-xs hover:bg-gray-100">Duvar kağıdı</div>
+                <div className="py-2 px-4 text-xs font-medium text-primary">Daha fazla</div>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+        
+        <AccordionItem value="item-3" className="border-b border-border/50">
+          <AccordionTrigger className="py-3 hover:no-underline">
+            <div className="flex items-center gap-3 text-left">
+              <div className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary font-medium text-sm">3</div>
+              <span>"Daha fazla" ve ardından "Sohbeti dışa aktar" seçeneğini seçin</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pl-9">
+            <div className="rounded-lg overflow-hidden shadow-sm border border-border/50 bg-white">
+              <div className="p-3 flex flex-col gap-2">
+                <div className="absolute right-10 top-[240px] bg-white shadow-lg rounded-md border border-gray-200 z-10">
+                  <div className="py-2 px-4 text-xs hover:bg-gray-100">Sohbeti temizle</div>
+                  <div className="py-2 px-4 text-xs hover:bg-gray-100">Kişiyi engelle</div>
+                  <div className="py-2 px-4 text-xs text-primary font-medium">Sohbeti dışa aktar</div>
+                  <div className="py-2 px-4 text-xs hover:bg-gray-100">Sohbeti sil</div>
+                </div>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+        
+        <AccordionItem value="item-4" className="border-b border-border/50">
+          <AccordionTrigger className="py-3 hover:no-underline">
+            <div className="flex items-center gap-3 text-left">
+              <div className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary font-medium text-sm">4</div>
+              <span>"Medya olmadan" seçeneğini seçin</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pl-9">
+            <div className="rounded-lg overflow-hidden shadow-sm border border-border/50 bg-white">
+              <div className="p-4 flex flex-col items-center gap-3">
+                <div className="text-sm font-medium">Sohbeti dışa aktar</div>
+                <div className="flex flex-col gap-2 w-full">
+                  <div className="p-3 border border-gray-200 rounded-md text-xs flex items-center justify-between">
+                    <span>Medya ile</span>
+                    <div className="h-4 w-4 rounded-full border border-gray-300"></div>
+                  </div>
+                  <div className="p-3 border border-primary rounded-md text-xs flex items-center justify-between bg-primary/5">
+                    <span className="font-medium">Medya olmadan</span>
+                    <div className="h-4 w-4 rounded-full border border-primary bg-primary flex items-center justify-center">
+                      <div className="h-2 w-2 bg-white rounded-full"></div>
+                    </div>
+                  </div>
+                </div>
+                <Button size="sm" className="mt-2 w-full">Dışa Aktar</Button>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+        
+        <AccordionItem value="item-5">
+          <AccordionTrigger className="py-3 hover:no-underline">
+            <div className="flex items-center gap-3 text-left">
+              <div className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary font-medium text-sm">5</div>
+              <span>Oluşturulan ZIP dosyasını bu sayfaya yükleyin</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pl-9">
+            <div className="rounded-lg bg-white border border-border/50 p-4 flex flex-col items-center gap-3">
+              <FileZip className="h-10 w-10 text-primary opacity-70" />
+              <div className="text-sm font-medium">WhatsApp Chat XXX.zip</div>
+              <div className="text-xs text-muted-foreground">
+                WhatsApp, sohbet geçmişinizi bir ZIP dosyası olarak dışa aktaracaktır. Bu dosyayı kaydedin ve yukarıdaki yükleme alanına sürükleyip bırakın.
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <div className="size-2 rounded-full bg-primary animate-pulse"></div>
+                <div className="text-xs text-primary font-medium">
+                  İşte bu sohbet analizine hazırsınız!
+                </div>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    </div>
+  );
+
   return (
     <motion.div 
       className="w-full max-w-xl mx-auto mb-8"
@@ -171,23 +317,35 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
             exit={{ opacity: 0, scale: 0.95 }}
           >
             <div className="flex flex-col items-center text-center">
-              <Upload className="h-10 w-10 text-muted-foreground mb-4" />
+              <Upload className="h-10 w-10 text-primary mb-4" />
               <h3 className="font-display font-medium text-lg mb-2">WhatsApp Sohbet Dosyanızı Yükleyin</h3>
               <p className="text-muted-foreground mb-6 text-sm max-w-md">
                 Sohbetinizin .zip veya .txt dosyasını sürükleyip bırakın veya bilgisayarınızdan seçin
               </p>
               
-              <button
-                className="bg-primary rounded-full px-5 py-2.5 text-primary-foreground font-medium shadow-soft hover:shadow-lg btn-transition"
-                onClick={handleButtonClick}
-              >
-                Dosya Seç
-              </button>
+              <div className="flex gap-3">
+                <Button
+                  className="rounded-full shadow-soft hover:shadow-lg btn-transition"
+                  onClick={handleButtonClick}
+                >
+                  <Upload className="mr-1 h-4 w-4" />
+                  Dosya Seç
+                </Button>
+                <Button
+                  variant="outline"
+                  className="rounded-full hover:bg-secondary btn-transition"
+                  onClick={toggleGuide}
+                >
+                  {showGuide ? 'Kılavuzu Gizle' : 'Nasıl Yapılır?'}
+                </Button>
+              </div>
               
               <p className="mt-4 text-xs text-muted-foreground">
                 WhatsApp &gt; Sohbet &gt; Dışa Aktar &gt; Medya olmadan
               </p>
             </div>
+            
+            {showGuide && <GuideSteps />}
           </motion.div>
         ) : (
           <motion.div

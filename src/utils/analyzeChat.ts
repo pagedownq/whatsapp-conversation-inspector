@@ -1,3 +1,4 @@
+
 import { ChatMessage, getParticipants } from './parseChat';
 import { 
   analyzeSentiment, 
@@ -324,6 +325,32 @@ function detectConversationStarts(messages: ChatMessage[], participant: string):
 }
 
 /**
+ * Detect replies in conversation
+ */
+function detectReplies(messages: ChatMessage[], participant: string): number {
+  let replyCount = 0;
+  const timeThreshold = 30 * 60 * 1000; // 30 minutes in milliseconds
+  
+  for (let i = 1; i < messages.length; i++) {
+    if (messages[i].sender !== participant) continue;
+    if (messages[i-1].sender === participant) continue; // Skip if previous message is from the same participant
+    
+    try {
+      const currentTime = new Date(formatDateTimeForParsing(messages[i].date, messages[i].time)).getTime();
+      const prevTime = new Date(formatDateTimeForParsing(messages[i-1].date, messages[i-1].time)).getTime();
+      
+      if (currentTime - prevTime <= timeThreshold) {
+        replyCount++;
+      }
+    } catch (error) {
+      console.error("Error calculating replies:", error);
+    }
+  }
+  
+  return replyCount;
+}
+
+/**
  * Detect disagreements in messages
  */
 function detectDisagreements(messages: ChatMessage[]): number {
@@ -394,6 +421,36 @@ function getStartWordFrequency(messages: ChatMessage[]): Map<string, number> {
   });
   
   return wordMap;
+}
+
+/**
+ * Calculate average reply time for a participant
+ */
+function calculateAverageReplyTime(messages: ChatMessage[], participant: string): number | null {
+  const replyTimes: number[] = [];
+  const timeThreshold = 30 * 60 * 1000; // 30 minutes in milliseconds
+  
+  for (let i = 1; i < messages.length; i++) {
+    if (messages[i].sender !== participant) continue;
+    if (messages[i-1].sender === participant) continue; // Skip if previous message is from the same participant
+    
+    try {
+      const currentTime = new Date(formatDateTimeForParsing(messages[i].date, messages[i].time)).getTime();
+      const prevTime = new Date(formatDateTimeForParsing(messages[i-1].date, messages[i-1].time)).getTime();
+      
+      const timeDiff = currentTime - prevTime;
+      if (timeDiff <= timeThreshold) {
+        replyTimes.push(timeDiff / (60 * 1000)); // Convert to minutes
+      }
+    } catch (error) {
+      console.error("Error calculating average reply time:", error);
+    }
+  }
+  
+  if (replyTimes.length === 0) return null;
+  
+  const sum = replyTimes.reduce((acc, time) => acc + time, 0);
+  return sum / replyTimes.length;
 }
 
 /**
@@ -528,6 +585,16 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
   let mostRomanticCount = 0;
   const loveExpressionCounts: Record<string, number> = {};
   const apologyExamples: Array<{sender: string, content: string, text: string}> = [];
+  
+  // Calculate disagreement and agreement counts per participant
+  const participantDisagreements: Record<string, number> = {};
+  const participantAgreements: Record<string, number> = {};
+  
+  participants.forEach(p => {
+    const participantMessages = sortedMessages.filter(m => m.sender === p);
+    participantDisagreements[p] = detectDisagreements(participantMessages);
+    participantAgreements[p] = detectAgreements(participantMessages);
+  });
   
   for (let i = 0; i < sortedMessages.length; i++) {
     const message = sortedMessages[i];
@@ -669,6 +736,39 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     messagesByHour[parseInt(message.time.split(':')[0])] = (messagesByHour[parseInt(message.time.split(':')[0])] || 0) + 1;
   }
   
+  // Populate conversation patterns for each participant
+  participants.forEach(participant => {
+    const participantMessages = sortedMessages.filter(m => m.sender === participant);
+    const stats = participantStats[participant];
+    
+    // Calculate conversation starts
+    stats.conversationPatterns.conversationStarts = detectConversationStarts(sortedMessages, participant);
+    
+    // Calculate replies
+    stats.conversationPatterns.replies = detectReplies(sortedMessages, participant);
+    
+    // Calculate average reply time
+    stats.conversationPatterns.avgReplyTime = calculateAverageReplyTime(sortedMessages, participant);
+    
+    // Set disagreement and agreement counts
+    stats.conversationPatterns.disagreementCount = participantDisagreements[participant];
+    stats.conversationPatterns.agreementCount = participantAgreements[participant];
+    
+    // Calculate most used words
+    const wordFrequency = analyzeWordFrequency(participantMessages);
+    stats.conversationPatterns.mostUsedWords = Array.from(wordFrequency.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([word, count]) => ({ word, count }));
+    
+    // Calculate most used start words
+    const startWordFrequency = getStartWordFrequency(participantMessages);
+    stats.conversationPatterns.mostUsedStartWords = Array.from(startWordFrequency.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([word, count]) => ({ word, count }));
+  });
+  
   participants.forEach(participant => {
     const times = responseTimes[participant] || [];
     if (times.length > 0) {
@@ -710,7 +810,8 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
       Math.max(stats.messageCount, 1);
     
     if (stats.manipulation.messageCount > 0) {
-      stats.manipulation.averageScore /= stats.manipulation.messageCount;
+      stats.manipulation.averageScore = participantManipulationScores[participant].reduce((sum, score) => sum + score, 0) / 
+        stats.manipulation.messageCount;
     }
   });
   

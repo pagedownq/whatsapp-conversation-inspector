@@ -1,7 +1,7 @@
 
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Upload, X, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Smartphone, FileZip, MessageCircle } from 'lucide-react';
+import { FileText, Upload, X, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Smartphone, Archive, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import JSZip from 'jszip';
 import { Card, CardContent } from '@/components/ui/card';
@@ -268,7 +268,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
           </AccordionTrigger>
           <AccordionContent className="pl-9">
             <div className="rounded-lg bg-white border border-border/50 p-4 flex flex-col items-center gap-3">
-              <FileZip className="h-10 w-10 text-primary opacity-70" />
+              <Archive className="h-10 w-10 text-primary opacity-70" />
               <div className="text-sm font-medium">WhatsApp Chat XXX.zip</div>
               <div className="text-xs text-muted-foreground">
                 WhatsApp, sohbet geçmişinizi bir ZIP dosyası olarak dışa aktaracaktır. Bu dosyayı kaydedin ve yukarıdaki yükleme alanına sürükleyip bırakın.

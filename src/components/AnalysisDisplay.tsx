@@ -188,7 +188,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Mobile swipe instruction - only visible on mobile */}
       {isMobile && (
         <div className="flex items-center justify-center gap-2 mb-4 p-2 bg-secondary/50 rounded-lg text-sm">
           <ChevronsRight className="h-4 w-4 animate-pulse" />

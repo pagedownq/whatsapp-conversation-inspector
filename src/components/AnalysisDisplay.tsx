@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Line, LineChart } from 'recharts';
@@ -815,7 +816,7 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                 positivePercentage: stats.sentiment.positivePercentage,
                 negativePercentage: stats.sentiment.negativePercentage,
                 neutralPercentage: stats.sentiment.neutralPercentage,
-                averageScore: stats.sentiment.overallScore // Map overallScore to averageScore
+                averageScore: stats.sentiment.overallScore
               }}
               manipulation={stats.manipulation}
               participantStats={stats.participantStats}

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, LineChart, Line, Legend, PieChart, Pie } from 'recharts';
@@ -232,8 +231,7 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
                                 <Cell key={`cell-${index}`} fill={SENTIMENT_COLORS[index % SENTIMENT_COLORS.length]} />
                               ))}
                             </Pie>
-                            {/* Fix here: Correct the tooltip formatter */}
-                            <Tooltip formatter={(value: any) => [`${value} mesaj`, '']} />
+                            <Tooltip formatter={(value) => [value + ' mesaj', '']} />
                             <Legend />
                           </PieChart>
                         </div>
@@ -384,7 +382,7 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
                               <Cell key={`cell-${index}`} fill={`hsl(${280 + index * 30}, 70%, 60%)`} />
                             ))}
                           </Pie>
-                          <Tooltip formatter={(value: any) => [`${value} örnek`, '']} />
+                          <Tooltip formatter={(value) => [`${value} örnek`, '']} />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>

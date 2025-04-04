@@ -232,7 +232,8 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
                                 <Cell key={`cell-${index}`} fill={SENTIMENT_COLORS[index % SENTIMENT_COLORS.length]} />
                               ))}
                             </Pie>
-                            <Tooltip formatter={(value: any) => [`${value} mesaj`, entry => entry.name]} />
+                            {/* Fix here: Correct the tooltip formatter */}
+                            <Tooltip formatter={(value: any) => [`${value} mesaj`, '']} />
                             <Legend />
                           </PieChart>
                         </div>

@@ -52,7 +52,7 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
     return <Brain className="text-blue-500" />;
   };
   
-  // Check if manipulation scores and data exist
+  // Check if manipulation scores and data exist with null safety
   const hasManipulationScores = manipulation && 
     manipulation.manipulationScores && 
     manipulation.mostManipulative && 
@@ -114,7 +114,7 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
                         onClick={() => setSelectedParticipant(name)}
                         style={
                           selectedParticipant !== name
-                            ? { borderLeft: `3px solid ${participantColors[name]}` }
+                            ? { borderLeft: `3px solid ${participantColors[name] || '#ccc'}` }
                             : {}
                         }
                       >
@@ -129,7 +129,7 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
                         <div className="flex items-center gap-2">
                           <div
                             className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: participantColors[selectedParticipant] }}
+                            style={{ backgroundColor: participantColors[selectedParticipant] || '#ccc' }}
                           ></div>
                           <h3 className="font-medium">{selectedParticipant}</h3>
                         </div>
@@ -237,7 +237,8 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
                     <div>
                       <div className="font-medium text-xl">{manipulation.mostManipulative || "Veri Yok"}</div>
                       <div className="text-xs text-muted-foreground">
-                        {hasManipulationScores && manipulation.manipulationScores[manipulation.mostManipulative] 
+                        {hasManipulationScores && manipulation.manipulationScores && manipulation.mostManipulative && 
+                          manipulation.manipulationScores[manipulation.mostManipulative] 
                           ? manipulation.manipulationScores[manipulation.mostManipulative] 
                           : 0} manipülatif mesaj
                       </div>
@@ -298,4 +299,3 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
 };
 
 export default SentimentAnalysisSection;
-

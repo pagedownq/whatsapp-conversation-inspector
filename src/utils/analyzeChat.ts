@@ -7,7 +7,8 @@ import {
   analyzeRelationshipHealth,
   SentimentResult, 
   ManipulationResult,
-  RelationshipHealthResult 
+  RelationshipHealthResult,
+  ApologyResult 
 } from './sentimentAnalysis';
 
 export interface MediaStats {
@@ -619,7 +620,13 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
   let mostRomanticPerson = '';
   let mostRomanticCount = 0;
   const loveExpressionCounts: Record<string, number> = {};
-  const apologyExamples: Array<{sender: string, content: string, text: string}> = [];
+  const apologyExamples: Array<{
+    sender: string;
+    content: string;
+    text: string;
+    sincerity?: number;
+    context?: string;
+  }> = [];
   
   const participantDisagreements: Record<string, number> = {};
   const participantAgreements: Record<string, number> = {};

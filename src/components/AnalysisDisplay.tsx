@@ -8,6 +8,8 @@ import { Clock, MessageSquare, Type, Smile, User, Calendar, Activity, BarChart2,
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getSentimentColor, getManipulationLevel, getManipulationTypeLabel } from '@/utils/sentimentAnalysis';
 import WordAnalysisSection from './WordAnalysisSection';
+import SentimentAnalysisSection from './SentimentAnalysisSection';
+import RelationshipAnalysisSection from './RelationshipAnalysisSection';
 
 interface AnalysisDisplayProps {
   chatData: ChatMessage[];
@@ -808,234 +810,21 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
           )}
           
           {selectedTab === 'sentiment' && (
-            <div className="space-y-6">
-              <div className="bg-card rounded-2xl p-6 shadow-soft">
-                <h3 className="text-lg font-medium mb-4">Duygu Analizi</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
-                  <div className="bg-secondary/50 rounded-xl p-4 text-center">
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Pozitif Mesajlar</div>
-                    <div className="text-2xl font-medium">{Math.round(stats.sentiment.positivePercentage)}%</div>
-                  </div>
-                  <div className="bg-secondary/50 rounded-xl p-4 text-center">
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Nötr Mesajlar</div>
-                    <div className="text-2xl font-medium">{Math.round(stats.sentiment.neutralPercentage)}%</div>
-                  </div>
-                  <div className="bg-secondary/50 rounded-xl p-4 text-center">
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Negatif Mesajlar</div>
-                    <div className="text-2xl font-medium">{Math.round(stats.sentiment.negativePercentage)}%</div>
-                  </div>
-                </div>
-                
-                <div className="h-64 mb-6">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={sentimentData}
-                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip 
-                        formatter={(value: any) => [Number(value).toFixed(2), 'Duygu Skoru']}
-                        labelFormatter={(label: any) => `${label}`}
-                      />
-                      <Bar 
-                        dataKey="score" 
-                        animationBegin={0}
-                        animationDuration={1500}
-                        animationEasing="ease-out"
-                      >
-                        {sentimentData.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={getSentimentColor(entry.score)} 
-                          />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-              
-              <div className="bg-card rounded-2xl p-6 shadow-soft">
-                <h3 className="text-lg font-medium mb-4">Manipülatif Dil Analizi</h3>
-                
-                <div className="mb-6">
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="text-sm text-muted-foreground">En Manipülatif Katılımcı</div>
-                    <div className="font-medium">{stats.manipulation.mostManipulative}</div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center mb-6">
-                    <div className="text-sm text-muted-foreground">Ortalama Manipülasyon Skoru</div>
-                    <div className="font-medium">{stats.manipulation.averageScore.toFixed(2)}/1.0 ({getManipulationLevel(stats.manipulation.averageScore)})</div>
-                  </div>
-                </div>
-                
-                <div className="h-64 mb-6">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={manipulationData}
-                      layout="vertical"
-                      margin={{ top: 5, right: 30, left: 50, bottom: 5 }}
-                    >
-                      <XAxis type="number" domain={[0, 1]} />
-                      <YAxis type="category" dataKey="name" width={80} />
-                      <Tooltip 
-                        formatter={(value: any) => [`${Number(value).toFixed(2)} / 1.0`, 'Manipülasyon Skoru']}
-                        labelFormatter={(label: any) => `${label}`}
-                      />
-                      <Bar 
-                        dataKey="score" 
-                        fill="#FF8042"
-                        animationBegin={0}
-                        animationDuration={1500}
-                        animationEasing="ease-out"
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                
-                {stats.participantStats[stats.manipulation.mostManipulative]?.manipulation.examples.length > 0 && (
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Örnek Manipülatif Mesajlar</h4>
-                    {stats.participantStats[stats.manipulation.mostManipulative].manipulation.examples.slice(0, 3).map((example, index) => (
-                      <div key={index} className="bg-secondary/30 rounded-xl p-4">
-                        <div className="text-xs text-muted-foreground mb-2">
-                          {example.instances.map(instance => getManipulationTypeLabel(instance.type)).join(', ')}
-                        </div>
-                        <p className="text-sm">{example.content}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            <SentimentAnalysisSection
+              sentiment={stats.sentiment}
+              manipulation={stats.manipulation}
+              participantStats={stats.participantStats}
+              participantColors={participantColors}
+            />
           )}
           
           {selectedTab === 'relationship' && (
-            <div className="space-y-6">
-              <div className="bg-card rounded-2xl p-6 shadow-soft">
-                <h3 className="text-lg font-medium mb-4">Özür Dileme Analizi</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-                  <div className="bg-secondary/50 rounded-xl p-4">
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Toplam Özür</div>
-                    <div className="text-2xl font-medium">{stats.apologies.total}</div>
-                  </div>
-                  
-                  <div className="bg-secondary/50 rounded-xl p-4">
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">En Çok Özür Dileyen</div>
-                    <div className="text-2xl font-medium">{stats.apologies.mostApologetic || "Yok"}</div>
-                  </div>
-                </div>
-                
-                <div className="h-64 mb-6">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={apologyData}
-                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip formatter={(value: any) => [`${value} kez`, 'Özür Sayısı']} />
-                      <Bar 
-                        dataKey="count" 
-                        fill="#2196F3"
-                        animationBegin={0}
-                        animationDuration={1500}
-                        animationEasing="ease-out"
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                
-                {stats.apologies.apologyExamples.length > 0 && (
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Örnek Özürler</h4>
-                    {stats.apologies.apologyExamples.slice(0, 3).map((example, index) => (
-                      <div key={index} className="bg-secondary/30 rounded-xl p-4">
-                        <div className="flex items-center mb-2">
-                          <User className="h-4 w-4 mr-2" />
-                          <span className="text-xs text-muted-foreground">{example.sender}</span>
-                        </div>
-                        <p className="text-sm">{example.content}</p>
-                        <div className="mt-2 text-xs text-primary font-medium">{example.text}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              <div className="bg-card rounded-2xl p-6 shadow-soft">
-                <h3 className="text-lg font-medium mb-4">Sevgi İfadeleri Analizi</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-                  <div className="bg-secondary/50 rounded-xl p-4">
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Toplam Sevgi İfadesi</div>
-                    <div className="text-2xl font-medium">{stats.loveExpressions.total}</div>
-                  </div>
-                  
-                  <div className="bg-secondary/50 rounded-xl p-4">
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">En Romantik Kişi</div>
-                    <div className="text-2xl font-medium">{stats.loveExpressions.mostRomantic || "Yok"}</div>
-                  </div>
-                </div>
-                
-                <div className="h-64 mb-6">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={loveExpressionData}
-                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip formatter={(value: any) => [`${value} kez`, 'İfade Sayısı']} />
-                      <Bar 
-                        dataKey="count" 
-                        fill="#E91E63"
-                        animationBegin={0}
-                        animationDuration={1500}
-                        animationEasing="ease-out"
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                
-                <div className="space-y-4">
-                  <h4 className="font-medium">En Çok Kullanılan Sevgi İfadeleri</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {stats.loveExpressions.mostCommonExpressions && 
-                     stats.loveExpressions.mostCommonExpressions.slice(0, 6).map((expression, index) => (
-                      <div key={index} className="bg-secondary/30 rounded-xl p-3 flex items-center justify-between">
-                        <div className="flex items-center">
-                          <Heart className="h-4 w-4 text-rose-500 mr-2" />
-                          <span>{expression.text}</span>
-                        </div>
-                        <span className="text-sm font-medium">{expression.count}x</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                {stats.loveExpressions.mostRomantic && stats.participantStats[stats.loveExpressions.mostRomantic]?.loveExpressions.examples.length > 0 && (
-                  <div className="mt-6 space-y-4">
-                    <h4 className="font-medium">Örnek Sevgi İfadeleri</h4>
-                    {stats.participantStats[stats.loveExpressions.mostRomantic].loveExpressions.examples.slice(0, 3).map((example, index) => (
-                      <div key={index} className="bg-secondary/30 rounded-xl p-4">
-                        <div className="flex items-center mb-2">
-                          <User className="h-4 w-4 mr-2" />
-                          <span className="text-xs text-muted-foreground">{stats.loveExpressions.mostRomantic}</span>
-                        </div>
-                        <p className="text-sm">{example.content}</p>
-                        <div className="mt-2 text-xs text-rose-500 font-medium">
-                          {example.text} {example.isILoveYou && "❤️"}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            <RelationshipAnalysisSection
+              loveExpressions={stats.loveExpressions}
+              apologies={stats.apologies}
+              participantStats={stats.participantStats}
+              participantColors={participantColors}
+            />
           )}
         </motion.div>
       </AnimatePresence>

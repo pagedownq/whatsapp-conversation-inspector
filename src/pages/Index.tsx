@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -18,6 +17,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import SentimentAnalysisSection from '@/components/SentimentAnalysisSection';
+import RelationshipAnalysisSection from '@/components/RelationshipAnalysisSection';
 
 const Index = () => {
   const [uploadMode, setUploadMode] = useState<boolean>(true);

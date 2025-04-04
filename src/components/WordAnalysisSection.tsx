@@ -1,377 +1,68 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { MessageCircle, Clock, MessageSquare, ThumbsUp, ThumbsDown, Type, CornerUpRight, AlignLeft, BarChart2, TrendingUp, Users, Repeat, UserPlus } from 'lucide-react';
-import { WordFrequency } from '@/utils/analyzeChat';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
+import { MessageCircle, ArrowRight, User, Clock, Check, X, Brain, MessageSquare, MessagesSquare, Smile, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { 
+  Card,
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ParticipantStats } from '@/utils/analyzeChat';
 
-interface WordAnalysisSectionProps {
-  mostFrequentWords: WordFrequency[];
-  mostFrequentWordsByParticipant: Record<string, WordFrequency[]>;
+interface WordAnalysisProps {
+  mostFrequentWords: Array<{ word: string; count: number }>;
+  mostFrequentWordsByParticipant: Record<string, Array<{ word: string; count: number }>>;
   participantColors: Record<string, string>;
   mostInitiator: string;
   mostReplier: string;
   fastestResponder: string;
   mostDisagreements: string;
   mostAgreements: string;
-  participantStats: Record<string, any>;
+  participantStats: Record<string, ParticipantStats>;
 }
 
-const WordBadge: React.FC<{ word: string; count: number; color?: string }> = ({ word, count, color = '#0088FE' }) => {
-  return (
-    <div className="bg-secondary/50 rounded-lg p-2 flex items-center justify-between">
-      <span className="font-medium" style={{ color }}>{word}</span>
-      <span className="text-xs text-muted-foreground ml-2">{count}x</span>
-    </div>
-  );
-};
-
-const ConversationBehaviorCard: React.FC<{
-  title: string;
-  value: string;
-  description: string;
-  icon: React.ReactNode;
-  stat?: number;
-  suffix?: string;
-}> = ({ title, value, description, icon, stat, suffix = '' }) => {
-  return (
-    <div className="bg-card rounded-xl p-4 shadow-soft">
-      <div className="flex items-center mb-2">
-        <div className="bg-primary/10 p-1.5 rounded-full mr-2">
+const ConversationPatternCard = ({ 
+  title, 
+  description, 
+  person, 
+  icon,
+  value,
+  color
+}: { 
+  title: string; 
+  description: string; 
+  person: string; 
+  icon: React.ReactNode; 
+  value?: string;
+  color?: string;
+}) => (
+  <Card className="shadow-soft h-full">
+    <CardHeader className="pb-2">
+      <CardTitle className="text-lg font-medium">{title}</CardTitle>
+      <CardDescription>{description}</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div className="flex items-center gap-2">
+        <div className={`p-2 rounded-full ${color ? color : 'bg-primary/10'}`}>
           {icon}
         </div>
-        <h3 className="text-sm font-medium">{title}</h3>
-      </div>
-      <div className="text-xl font-semibold mb-1">{value}</div>
-      {stat !== undefined && (
-        <div className="text-sm text-muted-foreground mb-2">
-          {stat}{suffix}
-        </div>
-      )}
-      <p className="text-xs text-muted-foreground">{description}</p>
-    </div>
-  );
-};
-
-const ParticipantWordUsage: React.FC<{
-  participant: string;
-  words: WordFrequency[];
-  color: string;
-}> = ({ participant, words, color }) => {
-  return (
-    <div className="border border-border/30 rounded-xl p-4">
-      <div className="flex items-center mb-3">
-        <div
-          className="w-4 h-4 rounded-full mr-2"
-          style={{ backgroundColor: color }}
-        ></div>
-        <h4 className="font-medium">{participant}</h4>
-      </div>
-      
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-        {words.slice(0, 8).map((item, index) => (
-          <WordBadge key={index} word={item.word} count={item.count} color={color} />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const DetailStatCard: React.FC<{
-  title: string;
-  value: number | string;
-  icon: React.ReactNode;
-  colorClass?: string;
-}> = ({ title, value, icon, colorClass = "bg-primary/10 text-primary" }) => {
-  return (
-    <div className="bg-secondary/40 p-4 rounded-xl">
-      <div className="flex justify-between mb-2">
-        <span className="text-sm text-muted-foreground">{title}</span>
-        <div className={`p-1.5 rounded-full ${colorClass}`}>
-          {icon}
-        </div>
-      </div>
-      <div className="text-xl font-medium">{value}</div>
-    </div>
-  );
-};
-
-const ConversationPatternSection: React.FC<{
-  participantStats: Record<string, any>;
-  participantColors: Record<string, string>;
-}> = ({ participantStats, participantColors }) => {
-  // Calculate conversation patterns
-  const conversationInitiationsData = Object.entries(participantStats)
-    .map(([name, data]) => ({
-      name,
-      value: data?.conversationPatterns?.conversationStarts || 0,
-      color: participantColors[name]
-    }))
-    .sort((a, b) => b.value - a.value);
-
-  const repliesData = Object.entries(participantStats)
-    .map(([name, data]) => ({
-      name,
-      value: data?.conversationPatterns?.replies || 0,
-      color: participantColors[name]
-    }))
-    .sort((a, b) => b.value - a.value);
-
-  const responseTimesData = Object.entries(participantStats)
-    .map(([name, data]) => ({
-      name,
-      value: Math.round(data?.responseTime?.average || 0),
-      color: participantColors[name]
-    }))
-    .filter(item => item.value > 0)
-    .sort((a, b) => a.value - b.value);
-
-  return (
-    <div className="bg-card rounded-2xl p-6 shadow-soft mb-6">
-      <h3 className="text-lg font-medium mb-4 flex items-center">
-        <TrendingUp className="h-5 w-5 mr-2 text-primary" />
-        Konuşma Akış Analizi
-      </h3>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
-          <h4 className="text-md font-medium mb-3">Konuşma Başlatma Dağılımı</h4>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
-                layout="vertical"
-                data={conversationInitiationsData}
-                margin={{ top: 5, right: 30, left: 30, bottom: 5 }}
-              >
-                <XAxis type="number" />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  width={80}
-                />
-                <Tooltip formatter={(value: any) => [`${value} başlatma`, '']} />
-                <Bar 
-                  dataKey="value" 
-                  background={{ fill: '#f5f5f5' }}
-                  animationBegin={0}
-                  animationDuration={1500}
-                >
-                  {conversationInitiationsData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        
-        <div>
-          <h4 className="text-md font-medium mb-3">Yanıt Dağılımı</h4>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
-                layout="vertical"
-                data={repliesData}
-                margin={{ top: 5, right: 30, left: 30, bottom: 5 }}
-              >
-                <XAxis type="number" />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  width={80}
-                />
-                <Tooltip formatter={(value: any) => [`${value} yanıt`, '']} />
-                <Bar 
-                  dataKey="value" 
-                  background={{ fill: '#f5f5f5' }}
-                  animationBegin={0}
-                  animationDuration={1500}
-                >
-                  {repliesData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <div className="text-xl font-bold">{person}</div>
+          {value && <div className="text-muted-foreground text-sm">{value}</div>}
         </div>
       </div>
-      
-      <div className="mt-6">
-        <h4 className="text-md font-medium mb-3">Ortalama Yanıt Süreleri (dakika)</h4>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart 
-              data={responseTimesData}
-              margin={{ top: 5, right: 30, left: 30, bottom: 5 }}
-            >
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip formatter={(value: any) => [`${value} dakika`, '']} />
-              <Bar 
-                dataKey="value" 
-                background={{ fill: '#f5f5f5' }}
-                animationBegin={0}
-                animationDuration={1500}
-              >
-                {responseTimesData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    </div>
-  );
-};
+    </CardContent>
+  </Card>
+);
 
-const AgreementDisagreementSection: React.FC<{
-  participantStats: Record<string, any>;
-  participantColors: Record<string, string>;
-}> = ({ participantStats, participantColors }) => {
-  // Prepare data for charts
-  const agreementData = Object.entries(participantStats)
-    .map(([name, data]) => ({
-      name,
-      value: data?.conversationPatterns?.agreementCount || 0,
-      color: participantColors[name]
-    }))
-    .sort((a, b) => b.value - a.value);
-
-  const disagreementData = Object.entries(participantStats)
-    .map(([name, data]) => ({
-      name,
-      value: data?.conversationPatterns?.disagreementCount || 0,
-      color: participantColors[name]
-    }))
-    .sort((a, b) => b.value - a.value);
-    
-  // Calculate agreement/disagreement ratio for each participant
-  const agreementRatioData = Object.entries(participantStats)
-    .map(([name, data]) => {
-      const agreements = data?.conversationPatterns?.agreementCount || 0;
-      const disagreements = data?.conversationPatterns?.disagreementCount || 0;
-      const total = agreements + disagreements;
-      
-      return {
-        name,
-        agreements,
-        disagreements,
-        ratio: total > 0 ? Math.round((agreements / total) * 100) : 0,
-        color: participantColors[name]
-      };
-    })
-    .filter(item => (item.agreements + item.disagreements) > 0)
-    .sort((a, b) => b.ratio - a.ratio);
-
-  return (
-    <div className="bg-card rounded-2xl p-6 shadow-soft mb-6">
-      <h3 className="text-lg font-medium mb-4 flex items-center">
-        <Users className="h-5 w-5 mr-2 text-primary" />
-        Anlaşma ve Fikir Ayrılığı Analizi
-      </h3>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div>
-          <h4 className="text-md font-medium mb-3">Onaylama Dağılımı</h4>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
-                layout="vertical"
-                data={agreementData}
-                margin={{ top: 5, right: 30, left: 30, bottom: 5 }}
-              >
-                <XAxis type="number" />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  width={80}
-                />
-                <Tooltip formatter={(value: any) => [`${value} onaylama`, '']} />
-                <Bar 
-                  dataKey="value" 
-                  background={{ fill: '#f5f5f5' }}
-                  animationBegin={0}
-                  animationDuration={1500}
-                >
-                  {agreementData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        
-        <div>
-          <h4 className="text-md font-medium mb-3">İtiraz Dağılımı</h4>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
-                layout="vertical"
-                data={disagreementData}
-                margin={{ top: 5, right: 30, left: 30, bottom: 5 }}
-              >
-                <XAxis type="number" />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  width={80}
-                />
-                <Tooltip formatter={(value: any) => [`${value} itiraz`, '']} />
-                <Bar 
-                  dataKey="value" 
-                  background={{ fill: '#f5f5f5' }}
-                  animationBegin={0}
-                  animationDuration={1500}
-                >
-                  {disagreementData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-      
-      <div className="mt-6">
-        <h4 className="text-md font-medium mb-3">Anlaşma Oranı (%)</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
-          {agreementRatioData.slice(0, 6).map((item, index) => (
-            <div key={index} className="bg-secondary/30 p-3 rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-medium">{item.name}</span>
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: item.color }}
-                ></div>
-              </div>
-              <div className="bg-background rounded-full h-2.5 mb-2">
-                <div 
-                  className="h-2.5 rounded-full" 
-                  style={{ 
-                    width: `${item.ratio}%`,
-                    backgroundColor: item.color 
-                  }}
-                ></div>
-              </div>
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{item.agreements} onay</span>
-                <span>%{item.ratio}</span>
-                <span>{item.disagreements} itiraz</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const WordAnalysisSection: React.FC<WordAnalysisSectionProps> = ({
+const WordAnalysisSection: React.FC<WordAnalysisProps> = ({
   mostFrequentWords,
   mostFrequentWordsByParticipant,
   participantColors,
@@ -382,202 +73,392 @@ const WordAnalysisSection: React.FC<WordAnalysisSectionProps> = ({
   mostAgreements,
   participantStats
 }) => {
-  const isMobile = useIsMobile();
-  const chartData = mostFrequentWords.slice(0, 15);
-  
-  // Calculate statistics for message patterns 
-  const totalConversationStarts = Object.values(participantStats).reduce(
-    (sum, stat) => sum + (stat?.conversationPatterns?.conversationStarts || 0), 0
+  const [selectedParticipant, setSelectedParticipant] = useState<string | null>(
+    Object.keys(mostFrequentWordsByParticipant)[0] || null
   );
-  
-  const totalReplies = Object.values(participantStats).reduce(
-    (sum, stat) => sum + (stat?.conversationPatterns?.replies || 0), 0
-  );
-  
-  const totalMessages = Object.values(participantStats).reduce(
-    (sum, stat) => sum + (stat?.messageCount || 0), 0
-  );
-  
-  // Conversation start percentage for the most initiator
-  const initiatorPercentage = totalConversationStarts > 0 
-    ? Math.round((participantStats[mostInitiator]?.conversationPatterns?.conversationStarts || 0) / totalConversationStarts * 100)
-    : 0;
-  
-  // Reply percentage for the most replier
-  const replierPercentage = totalReplies > 0
-    ? Math.round((participantStats[mostReplier]?.conversationPatterns?.replies || 0) / totalReplies * 100)
-    : 0;
-  
+  const [activeTab, setActiveTab] = useState("words");
+
+  const renderWordCloud = (words: Array<{ word: string; count: number }>) => {
+    const maxCount = Math.max(...words.map(item => item.count));
+    
+    return (
+      <div className="flex flex-wrap gap-2 justify-center">
+        {words.slice(0, 40).map((item, index) => {
+          const size = 14 + Math.floor((item.count / maxCount) * 24);
+          const opacity = 0.5 + (item.count / maxCount) * 0.5;
+          
+          return (
+            <motion.span
+              key={index}
+              className="px-2 py-1 rounded-md bg-secondary/60"
+              style={{ 
+                fontSize: `${size}px`, 
+                opacity, 
+                fontWeight: size > 25 ? 'bold' : 'normal' 
+              }}
+              whileHover={{ scale: 1.1, transition: { duration: 0.2 } }}
+            >
+              {item.word}
+            </motion.span>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const getAverageResponseTime = (participant: string) => {
+    const stats = participantStats[participant];
+    if (stats && stats.responseTime && stats.responseTime.average !== null) {
+      return `Ortalama yanıt süresi: ${Math.round(stats.responseTime.average)} dakika`;
+    }
+    return 'Yanıt süresi verisi yok';
+  };
+
+  const getConversationStyle = (participant: string) => {
+    const stats = participantStats[participant];
+    if (!stats) return null;
+    
+    const messageStyle = [];
+    
+    if (stats.averageMessageLength > 50) {
+      messageStyle.push('Uzun ve detaylı mesajlar yazar');
+    } else if (stats.averageMessageLength < 15) {
+      messageStyle.push('Kısa ve öz mesajlar yazar');
+    } else {
+      messageStyle.push('Orta uzunlukta mesajlar yazar');
+    }
+    
+    if (stats.wordCount / stats.messageCount > 8) {
+      messageStyle.push('Zengin kelime dağarcığı kullanır');
+    }
+    
+    if (stats.emojiCount / stats.messageCount > 0.5) {
+      messageStyle.push('Sıkça emoji kullanır');
+    }
+    
+    return messageStyle;
+  };
+
+  const getParticipantBehavior = (participant: string) => {
+    const stats = participantStats[participant];
+    if (!stats) return [];
+    
+    const behaviors = [];
+    
+    // Başlatıcı mı?
+    if (participant === mostInitiator) {
+      behaviors.push('Konuşmayı genellikle başlatır');
+    }
+    
+    // Yanıtlayıcı mı?
+    if (participant === mostReplier) {
+      behaviors.push('Mesajları sıkça yanıtlar');
+    }
+    
+    // Hızlı yanıt veren mi?
+    if (participant === fastestResponder) {
+      behaviors.push('Hızlı yanıt verir');
+    }
+    
+    // Fikir ayrılığı var mı?
+    if (participant === mostDisagreements) {
+      behaviors.push('Sıkça farklı fikir belirtir');
+    }
+    
+    // Onaylayıcı mı?
+    if (participant === mostAgreements) {
+      behaviors.push('Genellikle onaylayıcıdır');
+    }
+    
+    // Media paylaşımı
+    if (stats.mediaCount > 10) {
+      behaviors.push('Sıkça medya paylaşır');
+    }
+    
+    return behaviors;
+  };
+
+  const chartsData = Object.entries(mostFrequentWordsByParticipant).map(([name, words]) => ({
+    name,
+    uniqueWords: words.length,
+    totalUsage: words.reduce((sum, item) => sum + item.count, 0)
+  }));
+
   return (
     <div className="space-y-6">
-      <div className="bg-card rounded-2xl p-6 shadow-soft mb-6">
-        <h3 className="text-lg font-medium mb-4 flex items-center">
-          <MessageCircle className="h-5 w-5 mr-2 text-primary" />
-          Konuşma Davranış Analizi
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <DetailStatCard
-            title="Toplam Konuşma Başlatma"
-            value={totalConversationStarts}
-            icon={<UserPlus className="h-4 w-4" />}
-            colorClass="bg-blue-100 text-blue-600"
-          />
-          <DetailStatCard
-            title="Toplam Yanıt"
-            value={totalReplies}
-            icon={<CornerUpRight className="h-4 w-4" />}
-            colorClass="bg-green-100 text-green-600"
-          />
-          <DetailStatCard
-            title="Yanıt Oranı"
-            value={`%${totalMessages > 0 ? Math.round((totalReplies / totalMessages) * 100) : 0}`}
-            icon={<Repeat className="h-4 w-4" />}
-            colorClass="bg-purple-100 text-purple-600"
-          />
-        </div>
-      
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <ConversationBehaviorCard
-            title="En Çok Sohbet Başlatan"
-            value={mostInitiator}
-            description={`Tüm konuşma başlatmaların %${initiatorPercentage}'ini bu kişi yapmış`}
-            icon={<MessageCircle className="h-5 w-5 text-primary" />}
-            stat={participantStats[mostInitiator]?.conversationPatterns?.conversationStarts}
-            suffix=" kez"
-          />
-          <ConversationBehaviorCard
-            title="En Çok Yanıtlayan"
-            value={mostReplier}
-            description={`Tüm yanıtların %${replierPercentage}'ini bu kişi vermiş`}
-            icon={<CornerUpRight className="h-5 w-5 text-primary" />}
-            stat={participantStats[mostReplier]?.conversationPatterns?.replies}
-            suffix=" yanıt"
-          />
-          <ConversationBehaviorCard
-            title="En Hızlı Yanıt Veren"
-            value={fastestResponder}
-            description="Bu kişi en hızlı yanıt veren kişidir"
-            icon={<Clock className="h-5 w-5 text-primary" />}
-            stat={Math.round(participantStats[fastestResponder]?.responseTime?.average || 0)}
-            suffix=" dk"
-          />
-          <ConversationBehaviorCard
-            title="En Çok İtiraz Eden"
-            value={mostDisagreements}
-            description="Bu kişi tartışmalarda en çok itiraz eden kişidir"
-            icon={<ThumbsDown className="h-5 w-5 text-primary" />}
-            stat={participantStats[mostDisagreements]?.conversationPatterns?.disagreementCount}
-            suffix=" itiraz"
-          />
-          <ConversationBehaviorCard
-            title="En Çok Onaylayan"
-            value={mostAgreements}
-            description="Bu kişi tartışmalarda en çok onaylayan kişidir"
-            icon={<ThumbsUp className="h-5 w-5 text-primary" />}
-            stat={participantStats[mostAgreements]?.conversationPatterns?.agreementCount}
-            suffix=" onay"
-          />
-          <ConversationBehaviorCard
-            title="En Uzun Mesajlar"
-            value={
-              Object.entries(participantStats)
-                .sort((a, b) => {
-                  const valA = a[1]?.averageMessageLength || 0;
-                  const valB = b[1]?.averageMessageLength || 0;
-                  return valB - valA;
-                })[0]?.[0] || ""
-            }
-            description="Bu kişi en uzun mesajları yazıyor"
-            icon={<AlignLeft className="h-5 w-5 text-primary" />}
-            stat={
-              Math.round(
-                Object.values(participantStats)
-                  .map((stat: any) => stat?.averageMessageLength || 0)
-                  .sort((a, b) => b - a)[0] || 0
-              )
-            }
-            suffix=" karakter"
-          />
-        </div>
-      </div>
+      <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-2 w-full">
+          <TabsTrigger value="words">Kelime Analizi</TabsTrigger>
+          <TabsTrigger value="patterns">İletişim Desenleri</TabsTrigger>
+        </TabsList>
 
-      <ConversationPatternSection 
-        participantStats={participantStats} 
-        participantColors={participantColors} 
-      />
-      
-      <AgreementDisagreementSection 
-        participantStats={participantStats} 
-        participantColors={participantColors} 
-      />
+        <TabsContent value="words" className="mt-4 space-y-6">
+          <Card className="shadow-soft">
+            <CardHeader>
+              <CardTitle>Kelime Bulutu</CardTitle>
+              <CardDescription>
+                Sohbette en sık kullanılan kelimeler
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {renderWordCloud(mostFrequentWords)}
+            </CardContent>
+          </Card>
+          
+          <div>
+            <div className="mb-4">
+              <h3 className="text-lg font-medium mb-2">Katılımcı Kelime Analizi</h3>
+              <div className="flex flex-wrap gap-2">
+                {Object.keys(mostFrequentWordsByParticipant).map((participant) => (
+                  <Button
+                    key={participant}
+                    variant={selectedParticipant === participant ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedParticipant(participant)}
+                    style={selectedParticipant !== participant ? {
+                      borderLeft: `3px solid ${participantColors[participant]}`
+                    } : {}}
+                  >
+                    {participant}
+                  </Button>
+                ))}
+              </div>
+            </div>
 
-      <div className="bg-card rounded-2xl p-6 shadow-soft">
-        <h3 className="text-lg font-medium mb-4 flex items-center">
-          <BarChart2 className="h-5 w-5 mr-2 text-primary" />
-          En Sık Kullanılan Kelimeler
-        </h3>
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
-              layout={isMobile ? "vertical" : "horizontal"}
-            >
-              {isMobile ? (
-                <>
-                  <XAxis type="number" />
-                  <YAxis 
-                    dataKey="word" 
-                    type="category" 
-                    tick={{ fontSize: 12 }}
-                    width={80}
-                  />
-                </>
-              ) : (
-                <>
-                  <XAxis 
-                    dataKey="word" 
-                    tick={{ 
-                      fontSize: 12, 
-                      textAnchor: 'start',
-                      dy: 12,
-                      transform: "rotate(45)" 
-                    }}
-                    height={70}
-                  />
-                  <YAxis />
-                </>
-              )}
-              <Tooltip formatter={(value: any) => [`${value} kez`, '']} />
-              <Bar 
-                dataKey="count" 
-                fill="#0088FE"
-                animationBegin={0}
-                animationDuration={1500}
-                animationEasing="ease-out"
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+            {selectedParticipant && (
+              <Card className="shadow-soft">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: participantColors[selectedParticipant] }}
+                    ></div>
+                    {selectedParticipant} - Kelime Analizi
+                  </CardTitle>
+                  <CardDescription>
+                    {selectedParticipant}'in en çok kullandığı kelimeler ve iletişim tarzı
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">İletişim Tarzı</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {getConversationStyle(selectedParticipant)?.map((style, i) => (
+                        <Badge key={i} variant="outline">{style}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2">
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Karakteristik Davranışlar</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {getParticipantBehavior(selectedParticipant).map((behavior, i) => (
+                        <Badge key={i} variant="secondary">{behavior}</Badge>
+                      ))}
+                      {getParticipantBehavior(selectedParticipant).length === 0 && (
+                        <span className="text-muted-foreground text-sm">Belirgin bir davranış bulunamadı</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">En Sık Kullanılan Kelimeler</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {mostFrequentWordsByParticipant[selectedParticipant]?.slice(0, 8).map((item, index) => (
+                        <div 
+                          key={index}
+                          className="bg-secondary/60 rounded-md p-2 text-center"
+                        >
+                          <div className="font-medium">{item.word}</div>
+                          <div className="text-xs text-muted-foreground">{item.count} kez</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="text-sm text-muted-foreground">
+                  {getAverageResponseTime(selectedParticipant)}
+                </CardFooter>
+              </Card>
+            )}
 
-      <div className="bg-card rounded-2xl p-6 shadow-soft">
-        <h3 className="text-lg font-medium mb-4 flex items-center">
-          <Type className="h-5 w-5 mr-2 text-primary" />
-          Kişilerin En Sık Kullandığı Kelimeler
-        </h3>
-        <div className="grid gap-4">
-          {Object.entries(mostFrequentWordsByParticipant).map(([participant, words]) => (
-            <ParticipantWordUsage 
-              key={participant} 
-              participant={participant} 
-              words={words} 
-              color={participantColors[participant]} 
+            <div className="mt-6">
+              <Card className="shadow-soft">
+                <CardHeader>
+                  <CardTitle>Kelime Kullanım Karşılaştırması</CardTitle>
+                  <CardDescription>Katılımcıların kelime çeşitliliği ve toplam kullanımı</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartsData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip 
+                          formatter={(value: any) => [`${value}`, '']}
+                          labelFormatter={(name: string) => `${name}`}
+                        />
+                        <Bar name="Benzersiz Kelimeler" dataKey="uniqueWords" fill="#8884d8" />
+                        <Bar name="Toplam Kullanım" dataKey="totalUsage" fill="#82ca9d" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="patterns" className="mt-4 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ConversationPatternCard
+              title="Konuşma Başlatıcı"
+              description="En çok konuşma başlatan kişi"
+              person={mostInitiator}
+              icon={<MessageCircle size={20} className="text-blue-500" />}
+              color="bg-blue-100"
             />
-          ))}
-        </div>
-      </div>
+            
+            <ConversationPatternCard
+              title="En Sık Yanıtlayan"
+              description="Mesajlara en sık yanıt veren kişi"
+              person={mostReplier}
+              icon={<ArrowRight size={20} className="text-green-500" />}
+              color="bg-green-100"
+            />
+            
+            <ConversationPatternCard
+              title="En Hızlı Yanıt Veren"
+              description="Mesajlara en hızlı yanıt veren kişi"
+              person={fastestResponder}
+              icon={<Clock size={20} className="text-amber-500" />}
+              value={`Ortalama ${participantStats[fastestResponder]?.responseTime.average ? Math.round(participantStats[fastestResponder].responseTime.average) : '?'} dakika`}
+              color="bg-amber-100"
+            />
+            
+            <ConversationPatternCard
+              title="En Çok Onaylayan"
+              description="En fazla onaylama ifadesi kullanan kişi"
+              person={mostAgreements}
+              icon={<Check size={20} className="text-emerald-500" />}
+              color="bg-emerald-100"
+            />
+          </div>
+          
+          <Card className="shadow-soft">
+            <CardHeader>
+              <CardTitle>İletişim Tarzları</CardTitle>
+              <CardDescription>Katılımcıların iletişim tarzı ve mesaj yapıları</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {Object.keys(participantStats).map(participant => {
+                  const stats = participantStats[participant];
+                  return (
+                    <div key={participant} className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: participantColors[participant] }}
+                        ></div>
+                        <h3 className="text-lg font-medium">{participant}</h3>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="bg-secondary/40 rounded-lg p-3">
+                          <div className="text-sm text-muted-foreground mb-1">Ortalama Mesaj Uzunluğu</div>
+                          <div className="text-xl font-medium">{Math.round(stats.averageMessageLength)} karakter</div>
+                        </div>
+                        
+                        <div className="bg-secondary/40 rounded-lg p-3">
+                          <div className="text-sm text-muted-foreground mb-1">Kelime/Mesaj Oranı</div>
+                          <div className="text-xl font-medium">{(stats.wordCount / stats.messageCount).toFixed(1)}</div>
+                        </div>
+                        
+                        <div className="bg-secondary/40 rounded-lg p-3">
+                          <div className="text-sm text-muted-foreground mb-1">Emoji Kullanım Sıklığı</div>
+                          <div className="text-xl font-medium">{((stats.emojiCount / stats.messageCount) * 100).toFixed(1)}%</div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {getConversationStyle(participant)?.map((style, i) => (
+                          <Badge key={i} variant="outline">{style}</Badge>
+                        ))}
+                        {getParticipantBehavior(participant).map((behavior, i) => (
+                          <Badge key={i} variant="secondary">{behavior}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="shadow-soft">
+            <CardHeader>
+              <CardTitle>İletişim Desenleri</CardTitle>
+              <CardDescription>Sohbet içindeki iletişim desenleri ve dinamikler</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-secondary/40 rounded-lg p-4 flex flex-col items-center">
+                  <MessagesSquare size={24} className="mb-2 text-primary" />
+                  <div className="text-xl font-medium">
+                    {Object.values(participantStats).reduce((sum, stats) => sum + stats.messageCount, 0)}
+                  </div>
+                  <div className="text-sm text-muted-foreground text-center">Toplam Mesaj</div>
+                </div>
+                
+                <div className="bg-secondary/40 rounded-lg p-4 flex flex-col items-center">
+                  <Brain size={24} className="mb-2 text-violet-500" />
+                  <div className="text-xl font-medium">
+                    {Object.values(participantStats).reduce((sum, stats) => sum + stats.wordCount, 0)}
+                  </div>
+                  <div className="text-sm text-muted-foreground text-center">Toplam Kelime</div>
+                </div>
+                
+                <div className="bg-secondary/40 rounded-lg p-4 flex flex-col items-center">
+                  <Smile size={24} className="mb-2 text-amber-500" />
+                  <div className="text-xl font-medium">
+                    {Object.values(participantStats).reduce((sum, stats) => sum + stats.emojiCount, 0)}
+                  </div>
+                  <div className="text-sm text-muted-foreground text-center">Toplam Emoji</div>
+                </div>
+              </div>
+              
+              <div className="mt-6">
+                <h4 className="text-sm font-medium mb-2">Katılımcı Dağılımı</h4>
+                <div className="flex items-center gap-2">
+                  {Object.entries(participantStats).map(([name, stats], index) => (
+                    <div 
+                      key={name} 
+                      className="flex-1 h-8 rounded-md relative overflow-hidden"
+                      style={{ backgroundColor: participantColors[name] }}
+                    >
+                      <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-medium">
+                        {Math.round((stats.messageCount / Object.values(participantStats).reduce((sum, s) => sum + s.messageCount, 0)) * 100)}%
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between mt-1 text-xs text-muted-foreground">
+                  {Object.keys(participantStats).map(name => (
+                    <div key={name} className="flex items-center gap-1">
+                      <div 
+                        className="w-2 h-2 rounded-full" 
+                        style={{ backgroundColor: participantColors[name] }}
+                      ></div>
+                      {name}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

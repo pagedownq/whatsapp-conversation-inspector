@@ -1,12 +1,13 @@
-
 import { ChatMessage, getParticipants } from './parseChat';
 import { 
   analyzeSentiment, 
   detectManipulation, 
   detectApologies, 
   detectLoveExpressions, 
+  analyzeRelationshipHealth,
   SentimentResult, 
-  ManipulationResult 
+  ManipulationResult,
+  RelationshipHealthResult 
 } from './sentimentAnalysis';
 
 export interface MediaStats {
@@ -68,6 +69,8 @@ export interface ParticipantStats {
       content: string;
       score: number;
     };
+    detailedEmotions?: Record<string, number>;
+    emotionalVariability?: number;
   };
   manipulation: {
     averageScore: number;
@@ -77,12 +80,15 @@ export interface ParticipantStats {
       score: number;
       instances: Array<{text: string, type: string, weight: number}>;
     }>;
+    typeBreakdown?: Record<string, number>;
   };
   apologies: {
     count: number;
     examples: Array<{
       content: string;
       text: string;
+      sincerity?: number;
+      context?: string;
     }>;
   };
   loveExpressions: {
@@ -92,7 +98,13 @@ export interface ParticipantStats {
       content: string;
       text: string;
       isILoveYou: boolean;
+      intensity?: number;
     }>;
+  };
+  relationshipHealth?: {
+    averageScore: number;
+    positiveIndicators: Array<{text: string, type: string, weight: number}>;
+    negativeIndicators: Array<{text: string, type: string, weight: number}>;
   };
   conversationPatterns: ConversationPatterns;
 }
@@ -117,11 +129,14 @@ export interface ChatStats {
     positivePercentage: number;
     negativePercentage: number;
     neutralPercentage: number;
+    emotionalTrend?: 'improving' | 'declining' | 'stable' | 'fluctuating';
+    detailedEmotions?: Record<string, number>;
   };
   manipulation: {
     mostManipulative: string;
     averageScore: number;
     messagesByType: Record<string, number>;
+    patterns?: Array<{type: string, count: number, percentage: number}>;
   };
   apologies: {
     total: number;
@@ -130,6 +145,8 @@ export interface ChatStats {
       sender: string;
       content: string;
       text: string;
+      sincerity?: number;
+      context?: string;
     }>;
   };
   loveExpressions: {
@@ -140,6 +157,16 @@ export interface ChatStats {
       text: string;
       count: number;
     }>;
+  };
+  relationshipHealth?: {
+    overallScore: number;
+    communicationBalance: number;
+    intimacyLevel: number;
+    conflictLevel: number;
+    stabilityScore: number;
+    growthTrend: 'improving' | 'stable' | 'declining' | 'fluctuating';
+    positiveIndicators: Array<{type: string, count: number}>;
+    negativeIndicators: Array<{type: string, count: number}>;
   };
   wordAnalysis: {
     mostFrequentWords: WordFrequency[];
@@ -516,12 +543,15 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
         mostNegativeMessage: {
           content: '',
           score: 0
-        }
+        },
+        detailedEmotions: {},
+        emotionalVariability: undefined
       },
       manipulation: {
         averageScore: 0,
         messageCount: 0,
-        examples: []
+        examples: [],
+        typeBreakdown: {}
       },
       apologies: {
         count: 0,
@@ -531,6 +561,11 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
         count: 0,
         iLoveYouCount: 0,
         examples: []
+      },
+      relationshipHealth: {
+        averageScore: 0,
+        positiveIndicators: [],
+        negativeIndicators: []
       },
       conversationPatterns: {
         conversationStarts: 0,
@@ -586,7 +621,6 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
   const loveExpressionCounts: Record<string, number> = {};
   const apologyExamples: Array<{sender: string, content: string, text: string}> = [];
   
-  // Calculate disagreement and agreement counts per participant
   const participantDisagreements: Record<string, number> = {};
   const participantAgreements: Record<string, number> = {};
   
@@ -595,6 +629,18 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     participantDisagreements[p] = detectDisagreements(participantMessages);
     participantAgreements[p] = detectAgreements(participantMessages);
   });
+  
+  const detailedEmotionsTotal: Record<string, number> = {};
+  const relationshipHealthScores: number[] = [];
+  const relationshipIndicators: {
+    positive: Record<string, number>,
+    negative: Record<string, number>
+  } = {
+    positive: {},
+    negative: {}
+  };
+  
+  const allManipulationTypes: Record<string, number> = {};
   
   for (let i = 0; i < sortedMessages.length; i++) {
     const message = sortedMessages[i];
@@ -663,16 +709,29 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
       stats.manipulation.messageCount++;
       participantManipulationScores[participant].push(manipulationResult.score);
       
+      if (manipulationResult.breakdownByType) {
+        if (!participantStats[participant].manipulation.typeBreakdown) {
+          participantStats[participant].manipulation.typeBreakdown = {};
+        }
+        
+        Object.entries(manipulationResult.breakdownByType).forEach(([type, count]) => {
+          participantStats[participant].manipulation.typeBreakdown![type] = 
+            (participantStats[participant].manipulation.typeBreakdown![type] || 0) + count;
+          
+          allManipulationTypes[type] = (allManipulationTypes[type] || 0) + count;
+        });
+      }
+      
       manipulationResult.instances.forEach(instance => {
-        stats.manipulation.examples.push({
+        participantStats[participant].manipulation.examples.push({
           content: message.content,
           score: manipulationResult.score,
           instances: manipulationResult.instances
         });
         
         if (manipulationResult.score > 0.3) {
-          stats.manipulation.examples.sort((a, b) => b.score - a.score);
-          stats.manipulation.examples = stats.manipulation.examples.slice(0, 5);
+          participantStats[participant].manipulation.examples.sort((a, b) => b.score - a.score);
+          participantStats[participant].manipulation.examples = participantStats[participant].manipulation.examples.slice(0, 5);
         }
       });
     }
@@ -680,13 +739,15 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     const apologyResult = detectApologies(message.content);
     if (apologyResult.found) {
       apologyResult.instances.forEach(instance => {
-        stats.apologies.count++;
+        participantStats[participant].apologies.count++;
         totalApologies++;
         
-        if (stats.apologies.examples.length < 5) {
-          stats.apologies.examples.push({
+        if (participantStats[participant].apologies.examples.length < 5) {
+          participantStats[participant].apologies.examples.push({
             content: message.content,
-            text: instance.text
+            text: instance.text,
+            sincerity: apologyResult.sincerity,
+            context: apologyResult.context
           });
         }
         
@@ -694,13 +755,15 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
           apologyExamples.push({
             sender: participant,
             content: message.content,
-            text: instance.text
+            text: instance.text,
+            sincerity: apologyResult.sincerity,
+            context: apologyResult.context
           });
         }
       });
       
-      if (stats.apologies.count > mostApologeticCount) {
-        mostApologeticCount = stats.apologies.count;
+      if (participantStats[participant].apologies.count > mostApologeticCount) {
+        mostApologeticCount = participantStats[participant].apologies.count;
         mostApologeticPerson = participant;
       }
     }
@@ -708,66 +771,62 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     const loveResult = detectLoveExpressions(message.content);
     if (loveResult.found) {
       loveResult.instances.forEach(instance => {
-        stats.loveExpressions.count++;
+        participantStats[participant].loveExpressions.count++;
         totalLoveExpressions++;
         
         loveExpressionCounts[instance.text.toLowerCase()] = (loveExpressionCounts[instance.text.toLowerCase()] || 0) + 1;
         
         if (loveResult.containsILoveYou) {
-          stats.loveExpressions.iLoveYouCount++;
+          participantStats[participant].loveExpressions.iLoveYouCount++;
         }
         
-        if (stats.loveExpressions.examples.length < 5) {
-          stats.loveExpressions.examples.push({
+        if (participantStats[participant].loveExpressions.examples.length < 5) {
+          participantStats[participant].loveExpressions.examples.push({
             content: message.content,
             text: instance.text,
-            isILoveYou: /seni seviyorum|I love you/i.test(instance.text)
+            isILoveYou: /seni seviyorum|I love you/i.test(instance.text),
+            intensity: loveResult.intensity
           });
         }
       });
       
-      if (stats.loveExpressions.count > mostRomanticCount) {
-        mostRomanticCount = stats.loveExpressions.count;
+      if (participantStats[participant].loveExpressions.count > mostRomanticCount) {
+        mostRomanticCount = participantStats[participant].loveExpressions.count;
         mostRomanticPerson = participant;
       }
+    }
+    
+    const relationshipResult = analyzeRelationshipHealth(message.content);
+    if (relationshipResult) {
+      relationshipHealthScores.push(relationshipResult.score);
+      
+      if (!participantStats[participant].relationshipHealth) {
+        participantStats[participant].relationshipHealth = {
+          averageScore: 0,
+          positiveIndicators: [],
+          negativeIndicators: []
+        };
+      }
+      
+      relationshipResult.positiveIndicators.forEach(indicator => {
+        participantStats[participant].relationshipHealth!.positiveIndicators.push(indicator);
+        relationshipIndicators.positive[indicator.type] = (relationshipIndicators.positive[indicator.type] || 0) + 1;
+      });
+      
+      relationshipResult.negativeIndicators.forEach(indicator => {
+        participantStats[participant].relationshipHealth!.negativeIndicators.push(indicator);
+        relationshipIndicators.negative[indicator.type] = (relationshipIndicators.negative[indicator.type] || 0) + 1;
+      });
+      
+      participantStats[participant].relationshipHealth!.averageScore = 
+        participantStats[participant].relationshipHealth!.averageScore === 0 
+          ? relationshipResult.score 
+          : (participantStats[participant].relationshipHealth!.averageScore + relationshipResult.score) / 2;
     }
     
     messagesByDate[message.date] = (messagesByDate[message.date] || 0) + 1;
     messagesByHour[parseInt(message.time.split(':')[0])] = (messagesByHour[parseInt(message.time.split(':')[0])] || 0) + 1;
   }
-  
-  // Populate conversation patterns for each participant
-  participants.forEach(participant => {
-    const participantMessages = sortedMessages.filter(m => m.sender === participant);
-    const stats = participantStats[participant];
-    
-    // Calculate conversation starts
-    stats.conversationPatterns.conversationStarts = detectConversationStarts(sortedMessages, participant);
-    
-    // Calculate replies
-    stats.conversationPatterns.replies = detectReplies(sortedMessages, participant);
-    
-    // Calculate average reply time
-    stats.conversationPatterns.avgReplyTime = calculateAverageReplyTime(sortedMessages, participant);
-    
-    // Set disagreement and agreement counts
-    stats.conversationPatterns.disagreementCount = participantDisagreements[participant];
-    stats.conversationPatterns.agreementCount = participantAgreements[participant];
-    
-    // Calculate most used words
-    const wordFrequency = analyzeWordFrequency(participantMessages);
-    stats.conversationPatterns.mostUsedWords = Array.from(wordFrequency.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([word, count]) => ({ word, count }));
-    
-    // Calculate most used start words
-    const startWordFrequency = getStartWordFrequency(participantMessages);
-    stats.conversationPatterns.mostUsedStartWords = Array.from(startWordFrequency.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([word, count]) => ({ word, count }));
-  });
   
   participants.forEach(participant => {
     const times = responseTimes[participant] || [];
@@ -903,19 +962,16 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     }
   });
   
-  // Get top words across all messages
   const topWords = Array.from(allWordsFrequency.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 20)
     .map(([word, count]) => ({ word, count }));
   
-  // Get top start words across all messages
   const topStartWords = Array.from(startWordsFrequency.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10)
     .map(([word, count]) => ({ word, count }));
   
-  // Get most frequent words by participant
   const topWordsByParticipant: Record<string, WordFrequency[]> = {};
   Object.entries(wordsByParticipant).forEach(([participant, wordFrequency]) => {
     topWordsByParticipant[participant] = Array.from(wordFrequency.entries())
@@ -923,6 +979,37 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
       .slice(0, 10)
       .map(([word, count]) => ({ word, count }));
   });
+  
+  const manipulationPatterns = Object.entries(allManipulationTypes)
+    .sort(([, countA], [, countB]) => countB - countA)
+    .map(([type, count]) => ({
+      type,
+      count,
+      percentage: totalMessages > 0 ? (count / totalMessages) * 100 : 0
+    }));
+  
+  let emotionalTrend: 'improving' | 'declining' | 'stable' | 'fluctuating' = 'stable';
+  if (sortedMessages.length > 10) {
+    const firstHalf = sortedMessages.slice(0, Math.floor(sortedMessages.length / 2));
+    const secondHalf = sortedMessages.slice(Math.floor(sortedMessages.length / 2));
+    
+    const firstHalfScore = firstHalf.reduce((sum, msg) => 
+      sum + analyzeSentiment(msg.content).score, 0) / firstHalf.length;
+    
+    const secondHalfScore = secondHalf.reduce((sum, msg) => 
+      sum + analyzeSentiment(msg.content).score, 0) / secondHalf.length;
+    
+    const scoreDifference = secondHalfScore - firstHalfScore;
+    
+    if (scoreDifference > 0.15) emotionalTrend = 'improving';
+    else if (scoreDifference < -0.15) emotionalTrend = 'declining';
+    else if (Math.abs(scoreDifference) <= 0.05) emotionalTrend = 'stable';
+    else emotionalTrend = 'fluctuating';
+  }
+  
+  const overallRelationshipHealth = relationshipHealthScores.length > 0 
+    ? relationshipHealthScores.reduce((sum, score) => sum + score, 0) / relationshipHealthScores.length
+    : 0;
   
   return {
     totalMessages,
@@ -943,14 +1030,17 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
       overallScore: totalMessages > 0 ? totalSentimentScore / totalMessages : 0,
       positivePercentage: totalMessages > 0 ? (positiveMsgCount / totalMessages) * 100 : 0,
       negativePercentage: totalMessages > 0 ? (negativeMsgCount / totalMessages) * 100 : 0,
-      neutralPercentage: totalMessages > 0 ? (neutralMsgCount / totalMessages) * 100 : 0
+      neutralPercentage: totalMessages > 0 ? (neutralMsgCount / totalMessages) * 100 : 0,
+      emotionalTrend,
+      detailedEmotions: detailedEmotionsTotal
     },
     manipulation: {
       mostManipulative,
       averageScore: totalMessages > 0 
         ? Object.values(participantManipulationScores).flat().reduce((sum, score) => sum + score, 0) / totalMessages 
         : 0,
-      messagesByType: manipulationMessagesByType
+      messagesByType: manipulationMessagesByType,
+      patterns: manipulationPatterns
     },
     apologies: {
       total: totalApologies,
@@ -962,6 +1052,20 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
       mostRomantic: mostRomanticPerson,
       iLoveYouCount: iLoveYouCounts,
       mostCommonExpressions: sortedLoveExpressions
+    },
+    relationshipHealth: {
+      overallScore: overallRelationshipHealth,
+      communicationBalance: 0.5,
+      intimacyLevel: totalLoveExpressions / Math.max(totalMessages, 1),
+      conflictLevel: negativeMsgCount / Math.max(totalMessages, 1),
+      stabilityScore: 0.5,
+      growthTrend: emotionalTrend,
+      positiveIndicators: Object.entries(relationshipIndicators.positive)
+        .map(([type, count]) => ({ type, count }))
+        .sort((a, b) => b.count - a.count),
+      negativeIndicators: Object.entries(relationshipIndicators.negative)
+        .map(([type, count]) => ({ type, count }))
+        .sort((a, b) => b.count - a.count)
     },
     wordAnalysis: {
       mostFrequentWords: topWords,

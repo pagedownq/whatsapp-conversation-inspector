@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Line, LineChart } from 'recharts';
@@ -818,7 +817,12 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
                 neutralPercentage: stats.sentiment.neutralPercentage,
                 averageScore: stats.sentiment.overallScore
               }}
-              manipulation={stats.manipulation}
+              manipulation={{
+                mostManipulative: stats.manipulation.mostManipulative,
+                totalManipulativeMessages: stats.manipulation.totalManipulativeMessages,
+                manipulationScores: stats.manipulation.manipulationScores,
+                messagesByType: stats.manipulation.messagesByType
+              }}
               participantStats={stats.participantStats}
               participantColors={participantColors}
             />

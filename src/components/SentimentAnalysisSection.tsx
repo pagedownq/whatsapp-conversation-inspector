@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, LineChart, Line, Legend, PieChart, Pie } from 'recharts';
@@ -50,6 +51,12 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
     if (score > 0.3) return <AlertTriangle className="text-amber-500" />;
     return <Brain className="text-blue-500" />;
   };
+  
+  // Check if manipulation scores and data exist
+  const hasManipulationScores = manipulation && 
+    manipulation.manipulationScores && 
+    manipulation.mostManipulative && 
+    typeof manipulation.manipulationScores === 'object';
 
   return (
     <div className="space-y-6">
@@ -116,7 +123,7 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
                     ))}
                   </div>
 
-                  {selectedParticipant && (
+                  {selectedParticipant && participantStats[selectedParticipant] && (
                     <div className="bg-secondary/30 rounded-lg p-4">
                       <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center gap-2">
@@ -129,13 +136,13 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
                         <Badge
                           style={{
                             backgroundColor: getSentimentColor(
-                              participantStats[selectedParticipant].sentiment.averageScore
+                              participantStats[selectedParticipant]?.sentiment?.averageScore || 0
                             ),
                           }}
                         >
-                          {participantStats[selectedParticipant].sentiment.averageScore > 0.2
+                          {(participantStats[selectedParticipant]?.sentiment?.averageScore || 0) > 0.2
                             ? "Pozitif"
-                            : participantStats[selectedParticipant].sentiment.averageScore < -0.2
+                            : (participantStats[selectedParticipant]?.sentiment?.averageScore || 0) < -0.2
                             ? "Negatif"
                             : "Nötr"}
                         </Badge>
@@ -144,21 +151,21 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
                       <div className="grid grid-cols-3 gap-3 mb-4">
                         <div className="text-center p-2 rounded-md bg-green-100">
                           <div className="text-lg font-semibold">
-                            {participantStats[selectedParticipant].sentiment.positiveMsgCount}
+                            {participantStats[selectedParticipant]?.sentiment?.positiveMsgCount || 0}
                           </div>
                           <div className="text-xs text-muted-foreground">Pozitif Mesaj</div>
                         </div>
 
                         <div className="text-center p-2 rounded-md bg-gray-100">
                           <div className="text-lg font-semibold">
-                            {participantStats[selectedParticipant].sentiment.neutralMsgCount}
+                            {participantStats[selectedParticipant]?.sentiment?.neutralMsgCount || 0}
                           </div>
                           <div className="text-xs text-muted-foreground">Nötr Mesaj</div>
                         </div>
 
                         <div className="text-center p-2 rounded-md bg-red-100">
                           <div className="text-lg font-semibold">
-                            {participantStats[selectedParticipant].sentiment.negativeMsgCount}
+                            {participantStats[selectedParticipant]?.sentiment?.negativeMsgCount || 0}
                           </div>
                           <div className="text-xs text-muted-foreground">Negatif Mesaj</div>
                         </div>
@@ -171,15 +178,15 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
                               data={[
                                 {
                                   name: "Pozitif",
-                                  value: participantStats[selectedParticipant].sentiment.positiveMsgCount,
+                                  value: participantStats[selectedParticipant]?.sentiment?.positiveMsgCount || 0,
                                 },
                                 {
                                   name: "Nötr",
-                                  value: participantStats[selectedParticipant].sentiment.neutralMsgCount,
+                                  value: participantStats[selectedParticipant]?.sentiment?.neutralMsgCount || 0,
                                 },
                                 {
                                   name: "Negatif",
-                                  value: participantStats[selectedParticipant].sentiment.negativeMsgCount,
+                                  value: participantStats[selectedParticipant]?.sentiment?.negativeMsgCount || 0,
                                 },
                               ]}
                               cx="50%"
@@ -193,7 +200,7 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
                                 <Cell key={`cell-${index}`} fill={SENTIMENT_COLORS[index % SENTIMENT_COLORS.length]} />
                               ))}
                             </Pie>
-                            <Tooltip formatter={(value) => [`${value} mesaj`, '']} />
+                            <Tooltip formatter={(value) => [`${value} mesaj`]} />
                             <Legend />
                           </PieChart>
                         </ResponsiveContainer>
@@ -228,9 +235,11 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
                   <div className="bg-red-100 dark:bg-red-900/20 p-4 rounded-lg flex items-center gap-3">
                     <Scissors className="text-red-500 h-10 w-10" />
                     <div>
-                      <div className="font-medium text-xl">{manipulation.mostManipulative}</div>
+                      <div className="font-medium text-xl">{manipulation.mostManipulative || "Veri Yok"}</div>
                       <div className="text-xs text-muted-foreground">
-                        {manipulation.manipulationScores[manipulation.mostManipulative]} manipülatif mesaj
+                        {hasManipulationScores && manipulation.manipulationScores[manipulation.mostManipulative] 
+                          ? manipulation.manipulationScores[manipulation.mostManipulative] 
+                          : 0} manipülatif mesaj
                       </div>
                     </div>
                   </div>
@@ -239,11 +248,14 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-2">Toplam Manipülatif Mesaj</h3>
                   <div className="bg-secondary/50 p-4 rounded-lg flex items-center gap-3">
-                    <div className="text-3xl font-semibold">{manipulation.totalManipulativeMessages}</div>
+                    <div className="text-3xl font-semibold">{manipulation.totalManipulativeMessages || 0}</div>
                     <div className="text-xs text-muted-foreground">
                       Tespit edilen manipülatif mesaj
                       <br />
-                      ({Math.round((manipulation.totalManipulativeMessages / Object.values(participantStats).reduce((sum, p) => sum + p.messageCount, 0)) * 100)}% oranında)
+                      {Object.values(participantStats).reduce((sum, p) => sum + (p?.messageCount || 0), 0) > 0 ? 
+                        `(${Math.round(((manipulation.totalManipulativeMessages || 0) / 
+                          Object.values(participantStats).reduce((sum, p) => sum + (p?.messageCount || 0), 0)) * 100)}% oranında)` 
+                        : '(0% oranında)'}
                     </div>
                   </div>
                 </div>
@@ -254,7 +266,7 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={Object.entries(manipulation.messagesByType).map(([type, count]) => ({
+                      data={Object.entries(manipulation.messagesByType || {}).map(([type, count]) => ({
                         name: getManipulationTypeLabel(type),
                         value: count
                       }))}
@@ -267,11 +279,11 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
                       dataKey="value"
                       label
                     >
-                      {Object.keys(manipulation.messagesByType).map((_, index) => (
+                      {Object.keys(manipulation.messagesByType || {}).map((_, index) => (
                         <Cell key={`cell-${index}`} fill={`hsl(${280 + index * 30}, 70%, 60%)`} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => [`${value} örnek`, '']} />
+                    <Tooltip formatter={(value) => [`${value} örnek`]} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -286,3 +298,4 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
 };
 
 export default SentimentAnalysisSection;
+

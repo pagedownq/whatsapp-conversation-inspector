@@ -819,7 +819,10 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
               }}
               manipulation={{
                 mostManipulative: stats.manipulation.mostManipulative,
-                totalManipulativeMessages: stats.manipulation.messageCount || 0,
+                totalManipulativeMessages: Object.values(stats.participantStats).reduce(
+                  (total, participant) => total + participant.manipulation.messageCount, 
+                  0
+                ),
                 manipulationScores: Object.entries(stats.participantStats).reduce((acc, [name, data]) => {
                   acc[name] = data.manipulation.messageCount;
                   return acc;

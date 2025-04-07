@@ -681,6 +681,7 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
       stats.mediaStats.links += linkMatches.length;
       overallMediaStats.links += linkMatches.length;
       overallMediaStats.total += linkMatches.length;
+      stats.mediaCount += linkMatches.length;
     }
     
     const sentimentResult = analyzeSentiment(message.content);
@@ -725,6 +726,7 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
           participantStats[participant].manipulation.typeBreakdown![type] = 
             (participantStats[participant].manipulation.typeBreakdown![type] || 0) + count;
           
+          manipulationMessagesByType[type] = (manipulationMessagesByType[type] || 0) + count;
           allManipulationTypes[type] = (allManipulationTypes[type] || 0) + count;
         });
       }
@@ -1018,6 +1020,18 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     ? relationshipHealthScores.reduce((sum, score) => sum + score, 0) / relationshipHealthScores.length
     : 0;
   
+  const formatPercentage = (value: number) => {
+    return parseFloat(value.toFixed(2));
+  };
+  
+  const positivePercentage = formatPercentage((positiveMsgCount / Math.max(totalMessages, 1)) * 100);
+  const negativePercentage = formatPercentage((negativeMsgCount / Math.max(totalMessages, 1)) * 100);
+  const neutralPercentage = formatPercentage((neutralMsgCount / Math.max(totalMessages, 1)) * 100);
+  
+  const totalManipulativeMessagesCount = Object.values(participantStats).reduce(
+    (total, participant) => total + participant.manipulation.messageCount, 0
+  );
+  
   return {
     totalMessages,
     totalWords,
@@ -1035,9 +1049,9 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     mediaStats: overallMediaStats,
     sentiment: {
       overallScore: totalMessages > 0 ? totalSentimentScore / totalMessages : 0,
-      positivePercentage: totalMessages > 0 ? (positiveMsgCount / totalMessages) * 100 : 0,
-      negativePercentage: totalMessages > 0 ? (negativeMsgCount / totalMessages) * 100 : 0,
-      neutralPercentage: totalMessages > 0 ? (neutralMsgCount / totalMessages) * 100 : 0,
+      positivePercentage: positivePercentage,
+      negativePercentage: negativePercentage,
+      neutralPercentage: neutralPercentage,
       emotionalTrend,
       detailedEmotions: detailedEmotionsTotal
     },
@@ -1046,6 +1060,7 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
       averageScore: totalMessages > 0 
         ? Object.values(participantManipulationScores).flat().reduce((sum, score) => sum + score, 0) / totalMessages 
         : 0,
+      totalManipulativeMessages: totalManipulativeMessagesCount,
       messagesByType: manipulationMessagesByType,
       patterns: manipulationPatterns
     },
@@ -1063,8 +1078,8 @@ export function analyzeChat(messages: ChatMessage[]): ChatStats {
     relationshipHealth: {
       overallScore: overallRelationshipHealth,
       communicationBalance: 0.5,
-      intimacyLevel: totalLoveExpressions / Math.max(totalMessages, 1),
-      conflictLevel: negativeMsgCount / Math.max(totalMessages, 1),
+      intimacyLevel: formatPercentage(totalLoveExpressions / Math.max(totalMessages, 1)),
+      conflictLevel: formatPercentage(negativeMsgCount / Math.max(totalMessages, 1)),
       stabilityScore: 0.5,
       growthTrend: emotionalTrend,
       positiveIndicators: Object.entries(relationshipIndicators.positive)

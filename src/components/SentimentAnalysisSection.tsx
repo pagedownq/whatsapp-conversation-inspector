@@ -40,6 +40,11 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
   );
   const [activeTab, setActiveTab] = useState("sentiment");
 
+  // Ondalık sayıları 2 basamakla sınırlayan yardımcı fonksiyon
+  const formatPercentage = (value: number) => {
+    return Number(value.toFixed(2));
+  };
+
   const getEmotionIcon = (score: number) => {
     if (score > 0.6) return <ThumbsUp className="text-green-500" />;
     if (score < -0.3) return <ThumbsDown className="text-red-500" />;
@@ -65,6 +70,11 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
     ? manipulation.manipulationScores[mostManipulativePerson] || 0
     : 0;
 
+  // Yüzdeleri formatla
+  const formattedPositivePercentage = formatPercentage(sentiment.positivePercentage);
+  const formattedNegativePercentage = formatPercentage(sentiment.negativePercentage);
+  const formattedNeutralPercentage = formatPercentage(sentiment.neutralPercentage);
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
@@ -85,17 +95,17 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-secondary/50 rounded-lg p-4 flex flex-col items-center">
-                  <div className="text-2xl font-semibold text-green-500">%{sentiment.positivePercentage}</div>
+                  <div className="text-2xl font-semibold text-green-500">%{formattedPositivePercentage}</div>
                   <div className="text-sm text-muted-foreground">Pozitif</div>
                 </div>
                 
                 <div className="bg-secondary/50 rounded-lg p-4 flex flex-col items-center">
-                  <div className="text-2xl font-semibold">%{sentiment.neutralPercentage}</div>
+                  <div className="text-2xl font-semibold">%{formattedNeutralPercentage}</div>
                   <div className="text-sm text-muted-foreground">Nötr</div>
                 </div>
                 
                 <div className="bg-secondary/50 rounded-lg p-4 flex flex-col items-center">
-                  <div className="text-2xl font-semibold text-red-500">%{sentiment.negativePercentage}</div>
+                  <div className="text-2xl font-semibold text-red-500">%{formattedNegativePercentage}</div>
                   <div className="text-sm text-muted-foreground">Negatif</div>
                 </div>
               </div>

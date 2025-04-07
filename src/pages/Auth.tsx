@@ -74,7 +74,8 @@ const Auth = () => {
     if (email === ADMIN_EMAIL) {
       try {
         // Call the database function to set up admin subscription
-        const { error } = await supabase.rpc('setup_superuser_subscription');
+        // Using type assertion to bypass TypeScript error
+        const { error } = await supabase.rpc('setup_superuser_subscription' as any);
         
         if (error) {
           console.error('Error setting up admin subscription:', error);

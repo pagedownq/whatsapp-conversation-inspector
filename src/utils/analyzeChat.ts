@@ -136,6 +136,7 @@ export interface ChatStats {
   manipulation: {
     mostManipulative: string;
     averageScore: number;
+    totalManipulativeMessages: number;
     messagesByType: Record<string, number>;
     patterns?: Array<{type: string, count: number, percentage: number}>;
   };

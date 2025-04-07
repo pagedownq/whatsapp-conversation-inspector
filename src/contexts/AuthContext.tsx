@@ -3,6 +3,13 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 
+// Define TypeScript types for Supabase tables
+type Subscription = {
+  is_active: boolean;
+  subscription_type: string;
+  expires_at: string | null;
+};
+
 type SubscriptionStatus = {
   isActive: boolean;
   subscriptionType: string | null;
@@ -31,7 +38,7 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,7 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
         setSession(newSession);
         setUser(newSession?.user ?? null);
@@ -112,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeAuth();
 
     return () => {
-      subscription.unsubscribe();
+      authSubscription.unsubscribe();
     };
   }, []);
 

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,6 +27,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const loginSchema = z.object({
   email: z.string().email('Geçerli bir e-posta adresi giriniz'),
@@ -42,11 +43,15 @@ const registerSchema = z.object({
   path: ["confirmPassword"],
 });
 
+// Special admin email that will receive full access
+const ADMIN_EMAIL = 'mehmetirem305@gmail.com';
+
 const Auth = () => {
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { refreshSubscription } = useAuth();
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -65,15 +70,44 @@ const Auth = () => {
     },
   });
 
+  const setupSuperuserSubscription = async (email: string) => {
+    if (email === ADMIN_EMAIL) {
+      try {
+        // Call the database function to set up admin subscription
+        const { error } = await supabase.rpc('setup_superuser_subscription');
+        
+        if (error) {
+          console.error('Error setting up admin subscription:', error);
+          return;
+        }
+        
+        // Refresh subscription data in the context
+        await refreshSubscription();
+        
+        toast({
+          title: 'Yönetici hesabı aktifleştirildi',
+          description: 'Tüm premium özelliklere erişim sağlandı',
+        });
+      } catch (error) {
+        console.error('Error in setupSuperuserSubscription:', error);
+      }
+    }
+  };
+
   const handleLogin = async (values: z.infer<typeof loginSchema>) => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
 
       if (error) throw error;
+
+      // Check if this is the admin account and set up subscription if needed
+      if (values.email === ADMIN_EMAIL) {
+        await setupSuperuserSubscription(values.email);
+      }
 
       toast({
         title: 'Giriş başarılı',
@@ -95,19 +129,27 @@ const Auth = () => {
   const handleRegister = async (values: z.infer<typeof registerSchema>) => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
       });
 
       if (error) throw error;
 
+      // If this is the admin email, set up their subscription immediately
+      if (values.email === ADMIN_EMAIL) {
+        await setupSuperuserSubscription(values.email);
+      }
+
       toast({
         title: 'Kayıt başarılı',
         description: 'Hesabınız oluşturuldu. E-posta adresinize gönderilen doğrulama bağlantısına tıklayarak hesabınızı aktifleştirebilirsiniz.',
       });
 
-      setActiveTab('login');
+      // If this is the admin account, switch to login tab so they can login right away
+      if (values.email === ADMIN_EMAIL) {
+        setActiveTab('login');
+      }
     } catch (error: any) {
       toast({
         title: 'Kayıt başarısız',

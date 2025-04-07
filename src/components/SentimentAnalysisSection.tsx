@@ -58,6 +58,13 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
     manipulation.mostManipulative && 
     typeof manipulation.manipulationScores === 'object';
 
+  // Safely access manipulation properties with fallbacks
+  const totalManipulativeMessages = manipulation?.totalManipulativeMessages || 0;
+  const mostManipulativePerson = manipulation?.mostManipulative || "Veri Yok";
+  const manipulationScoreForPerson = hasManipulationScores && mostManipulativePerson !== "Veri Yok" 
+    ? manipulation.manipulationScores[mostManipulativePerson] || 0
+    : 0;
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
@@ -235,12 +242,9 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
                   <div className="bg-red-100 dark:bg-red-900/20 p-4 rounded-lg flex items-center gap-3">
                     <Scissors className="text-red-500 h-10 w-10" />
                     <div>
-                      <div className="font-medium text-xl">{manipulation.mostManipulative || "Veri Yok"}</div>
+                      <div className="font-medium text-xl">{mostManipulativePerson}</div>
                       <div className="text-xs text-muted-foreground">
-                        {hasManipulationScores && manipulation.manipulationScores && manipulation.mostManipulative && 
-                          manipulation.manipulationScores[manipulation.mostManipulative] 
-                          ? manipulation.manipulationScores[manipulation.mostManipulative] 
-                          : 0} manipülatif mesaj
+                        {manipulationScoreForPerson} manipülatif mesaj
                       </div>
                     </div>
                   </div>
@@ -249,12 +253,12 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-2">Toplam Manipülatif Mesaj</h3>
                   <div className="bg-secondary/50 p-4 rounded-lg flex items-center gap-3">
-                    <div className="text-3xl font-semibold">{manipulation.totalManipulativeMessages || 0}</div>
+                    <div className="text-3xl font-semibold">{totalManipulativeMessages}</div>
                     <div className="text-xs text-muted-foreground">
                       Tespit edilen manipülatif mesaj
                       <br />
                       {Object.values(participantStats).reduce((sum, p) => sum + (p?.messageCount || 0), 0) > 0 ? 
-                        `(${Math.round(((manipulation.totalManipulativeMessages || 0) / 
+                        `(${Math.round((totalManipulativeMessages / 
                           Object.values(participantStats).reduce((sum, p) => sum + (p?.messageCount || 0), 0)) * 100)}% oranında)` 
                         : '(0% oranında)'}
                     </div>

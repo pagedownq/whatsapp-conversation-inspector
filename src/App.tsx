@@ -10,21 +10,30 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Rejected from "./pages/Rejected";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import "./App.css";
 
-const queryClient = new QueryClient();
+// Create a new QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
+        <Toaster position="bottom-right" />
+        <Sonner position="bottom-right" closeButton />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/rejected" element={<Rejected />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/rejected" element={<Rejected />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

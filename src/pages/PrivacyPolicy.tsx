@@ -1,9 +1,11 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import Header from '@/components/Header';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import AdSenseAd from '@/components/AdSenseAd';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const PrivacyPolicy = () => {
   return (
@@ -13,6 +15,15 @@ const PrivacyPolicy = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
+      <div className="container mx-auto max-w-7xl py-4 flex items-center">
+        <Link to="/">
+          <Button variant="ghost" size="sm" className="flex items-center gap-1 mb-4">
+            <ArrowLeft className="h-4 w-4" />
+            Ana Sayfaya Dön
+          </Button>
+        </Link>
+      </div>
+      
       <Header />
       
       <main className="container mx-auto max-w-4xl py-8 pb-16">
@@ -144,8 +155,14 @@ const PrivacyPolicy = () => {
       </main>
       
       <footer className="py-6 border-t">
-        <div className="container mx-auto max-w-7xl text-center text-sm text-muted-foreground">
-          <p>MGverse &copy; {new Date().getFullYear()}</p>
+        <div className="container mx-auto max-w-7xl flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">MGverse &copy; {new Date().getFullYear()}</p>
+          <Link to="/">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Ana Sayfaya Dön
+            </Button>
+          </Link>
         </div>
       </footer>
     </motion.div>

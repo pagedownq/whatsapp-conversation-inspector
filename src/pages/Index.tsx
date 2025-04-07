@@ -7,7 +7,6 @@ import Header from '@/components/Header';
 import EmptyState from '@/components/EmptyState';
 import UploadSection from '@/components/UploadSection';
 import AnalysisDisplay from '@/components/AnalysisDisplay';
-import PastAnalyses from '@/components/PastAnalyses';
 import ConsentDialog from '@/components/ConsentDialog';
 import AdSenseAd from '@/components/AdSenseAd';
 import CookieConsent from '@/components/CookieConsent';
@@ -16,21 +15,18 @@ import { parseChat, ChatMessage } from '@/utils/parseChat';
 import { analyzeChat, ChatStats } from '@/utils/analyzeChat';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import SentimentAnalysisSection from '@/components/SentimentAnalysisSection';
 import RelationshipAnalysisSection from '@/components/RelationshipAnalysisSection';
 import SubscriptionCheck from '@/components/SubscriptionCheck';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogIn, LogOut, User as UserIcon } from 'lucide-react';
+import { LogIn, LogOut, ArrowLeft, Upload } from 'lucide-react';
 
 const Index = () => {
   const [uploadMode, setUploadMode] = useState<boolean>(true);
   const [uploadVisible, setUploadVisible] = useState<boolean>(false);
   const [parsedMessages, setParsedMessages] = useState<ChatMessage[]>([]);
   const [analysisStats, setAnalysisStats] = useState<ChatStats | null>(null);
-  const [activeTab, setActiveTab] = useState('upload');
-  const [viewMode, setViewMode] = useState<'analysis' | 'past'>('analysis');
   const [savingAnalysis, setSavingAnalysis] = useState(false);
   const isMobile = useIsMobile();
   const { toast } = useToast();
@@ -120,7 +116,6 @@ const Index = () => {
       
       setParsedMessages(messages);
       setUploadMode(false);
-      setViewMode('analysis');
     } catch (error) {
       console.error('Error processing file:', error);
       toast({
@@ -140,91 +135,47 @@ const Index = () => {
     setAnalysisStats(null);
     setUploadMode(true);
     setUploadVisible(false);
-    setViewMode('analysis');
-    setActiveTab('upload');
   }, []);
-
-  const handleSelectAnalysis = useCallback((data: ChatStats) => {
-    setAnalysisStats(data);
-    setUploadMode(false);
-    setViewMode('analysis');
-  }, []);
-
-  const handleSaveAnalysis = useCallback(() => {
-    if (!analysisStats) return;
-    
-    try {
-      setSavingAnalysis(true);
-      
-      const newAnalysis = {
-        id: uuidv4(),
-        date: new Date().toISOString(),
-        title: `WhatsApp Analizi (${analysisStats.participantStats ? Object.keys(analysisStats.participantStats).length : 0} kişi)`,
-        participantCount: analysisStats.participantStats ? Object.keys(analysisStats.participantStats).length : 0,
-        messageCount: analysisStats.totalMessages,
-        duration: analysisStats.duration,
-        startDate: analysisStats.startDate,
-        endDate: analysisStats.endDate,
-        mostManipulative: analysisStats.manipulation.mostManipulative,
-        data: analysisStats
-      };
-      
-      let existingAnalyses = [];
-      const storedAnalyses = localStorage.getItem('whatsapp-analyses');
-      if (storedAnalyses) {
-        existingAnalyses = JSON.parse(storedAnalyses);
-      }
-      
-      existingAnalyses.unshift(newAnalysis);
-      
-      localStorage.setItem('whatsapp-analyses', JSON.stringify(existingAnalyses));
-      
-      toast({
-        title: 'Analiz Kaydedildi',
-        description: 'Bu analiz geçmiş analizlere kaydedildi',
-      });
-      
-      setSavingAnalysis(false);
-    } catch (error) {
-      console.error('Error saving analysis:', error);
-      toast({
-        title: 'Kaydetme Hatası',
-        description: 'Analiz kaydedilirken bir hata oluştu',
-        variant: 'destructive'
-      });
-      setSavingAnalysis(false);
-    }
-  }, [analysisStats, toast]);
 
   const renderContent = () => {
     if (uploadMode) {
       return (
         <>
-          {!uploadVisible && (
-            <>
-              <Tabs defaultValue={activeTab} className="w-full max-w-4xl mx-auto" onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="upload">Yeni Analiz</TabsTrigger>
-                  <TabsTrigger value="past">Geçmiş Analizler</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="upload">
-                  <EmptyState onUploadClick={handleUploadClick} />
-                </TabsContent>
-                
-                <TabsContent value="past">
-                  <PastAnalyses onSelectAnalysis={handleSelectAnalysis} />
-                </TabsContent>
-              </Tabs>
+          {!uploadVisible ? (
+            <div className="w-full max-w-4xl mx-auto">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="bg-card border rounded-2xl p-8 shadow-md"
+              >
+                <EmptyState onUploadClick={handleUploadClick} />
+              </motion.div>
               
               <div className="mt-8 mb-4 w-full">
                 <AdSenseAd className="mx-auto" isInArticle={true} />
               </div>
-            </>
-          )}
-          
-          {uploadVisible && (
-            <UploadSection onFileProcessed={handleFileProcessed} />
+            </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="w-full max-w-2xl mx-auto"
+            >
+              <div className="mb-4">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setUploadVisible(false)}
+                  className="flex items-center gap-1"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Geri Dön
+                </Button>
+              </div>
+              <UploadSection onFileProcessed={handleFileProcessed} />
+            </motion.div>
           )}
         </>
       );
@@ -235,15 +186,12 @@ const Index = () => {
         <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-3">          
           <div className="flex flex-wrap justify-center sm:justify-start gap-2 w-full sm:w-auto">
             <Button 
+              onClick={handleReset} 
               variant="outline" 
-              onClick={handleSaveAnalysis}
-              disabled={savingAnalysis}
-              className="whitespace-nowrap"
+              className="whitespace-nowrap flex items-center gap-1"
             >
-              {savingAnalysis ? 'Kaydediliyor...' : 'Analizi Kaydet'}
-            </Button>
-            <Button onClick={handleReset} variant="outline" className="whitespace-nowrap">
-              Yeni Analiz
+              <Upload className="h-4 w-4" />
+              Yeni Dosya Yükle
             </Button>
           </div>
         </div>
@@ -275,13 +223,11 @@ const Index = () => {
       
       {hasConsent && (
         <motion.div 
-          className="min-h-screen flex flex-col bg-background px-2 sm:px-4 md:px-6"
+          className="min-h-screen flex flex-col bg-gradient-to-b from-background to-background/95 px-2 sm:px-4 md:px-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          <Header />
-          
           <div className="container mx-auto py-4 flex justify-between items-center">
             <div></div> {/* Empty div for flex spacing */}
             <div className="flex items-center gap-2">
@@ -303,6 +249,8 @@ const Index = () => {
               )}
             </div>
           </div>
+          
+          <Header />
           
           <main className="container mx-auto max-w-7xl flex-1 pb-16 overflow-hidden">
             {renderContent()}

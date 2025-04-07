@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MessageSquareText } from 'lucide-react';
+import { MessageSquareText, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Header = () => {
   return (
@@ -11,19 +12,29 @@ const Header = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
     >
-      <div className="flex items-center gap-3">
+      <Link to="/" className="flex items-center gap-3">
         <motion.div
-          className="bg-primary/10 p-2.5 rounded-xl"
-          whileHover={{ scale: 1.05 }}
+          className="bg-gradient-to-r from-primary/20 to-purple-500/20 p-3.5 rounded-2xl shadow-sm"
+          whileHover={{ scale: 1.05, rotate: 5 }}
           transition={{ type: 'spring', stiffness: 400, damping: 10 }}
         >
-          <MessageSquareText className="h-6 w-6 text-primary" />
+          <div className="relative">
+            <MessageSquareText className="h-7 w-7 text-primary" />
+            <motion.div
+              className="absolute -top-1 -right-1"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.5, duration: 0.3 }}
+            >
+              <Sparkles className="h-3 w-3 text-amber-500" />
+            </motion.div>
+          </div>
         </motion.div>
         <div className="flex flex-col">
-          <span className="text-xs uppercase tracking-wider font-medium text-muted-foreground">WhatsApp</span>
-          <h1 className="text-2xl font-display font-semibold tracking-tight">Analizer</h1>
+          <span className="text-xs uppercase tracking-wider font-medium bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">WhatsApp</span>
+          <h1 className="text-3xl font-display font-bold tracking-tight bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">Analizer</h1>
         </div>
-      </div>
+      </Link>
     </motion.header>
   );
 };

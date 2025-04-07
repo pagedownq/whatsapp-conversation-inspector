@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +20,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import SentimentAnalysisSection from '@/components/SentimentAnalysisSection';
 import RelationshipAnalysisSection from '@/components/RelationshipAnalysisSection';
+import SubscriptionCheck from '@/components/SubscriptionCheck';
+import { useAuth } from '@/contexts/AuthContext';
+import { LogIn, LogOut, User as UserIcon } from 'lucide-react';
 
 const Index = () => {
   const [uploadMode, setUploadMode] = useState<boolean>(true);
@@ -31,6 +35,7 @@ const Index = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   
   const [hasConsent, setHasConsent] = useState<boolean>(false);
   const [showConsentDialog, setShowConsentDialog] = useState<boolean>(true);
@@ -276,6 +281,28 @@ const Index = () => {
           transition={{ duration: 0.3 }}
         >
           <Header />
+          
+          <div className="container mx-auto py-4 flex justify-between items-center">
+            <div></div> {/* Empty div for flex spacing */}
+            <div className="flex items-center gap-2">
+              {user ? (
+                <>
+                  <div className="hidden sm:block text-sm text-muted-foreground mr-2">
+                    {user.email}
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => signOut()}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Çıkış Yap
+                  </Button>
+                </>
+              ) : (
+                <Button variant="outline" size="sm" onClick={() => navigate('/auth')}>
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Giriş Yap
+                </Button>
+              )}
+            </div>
+          </div>
           
           <main className="container mx-auto max-w-7xl flex-1 pb-16 overflow-hidden">
             {renderContent()}

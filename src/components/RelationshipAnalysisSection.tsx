@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Heart, Shield, AlertTriangle, MessageCircle, Clock, ThumbsUp, ThumbsDown, Flame, TrendingUp, TrendingDown, User, RefreshCw, ArrowRight, Lightbulb } from 'lucide-react';
@@ -7,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, PieChart, Pie } from 'recharts';
+import SubscriptionCheck from './SubscriptionCheck';
 
 interface RelationshipAnalysisSectionProps {
   loveExpressions: {
@@ -257,332 +257,334 @@ const RelationshipAnalysisSection: React.FC<RelationshipAnalysisSectionProps> = 
   };
 
   return (
-    <div className="space-y-6">
-      {Object.keys(participantStats).length >= 2 && (
-        <Card className="shadow-soft">
-          <CardHeader className="pb-2">
-            <CardTitle>İlişki Sağlığı</CardTitle>
-            <CardDescription>WhatsApp konuşmasına dayalı ilişki sağlığı değerlendirmesi</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <div className="mb-4 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">İlişki Puanı</span>
-                    <span className={`font-bold text-lg ${getRelationshipColor(relationshipScore)}`}>
-                      {relationshipScore}/100
-                    </span>
+    <SubscriptionCheck>
+      <div className="space-y-6">
+        {Object.keys(participantStats).length >= 2 && (
+          <Card className="shadow-soft">
+            <CardHeader className="pb-2">
+              <CardTitle>İlişki Sağlığı</CardTitle>
+              <CardDescription>WhatsApp konuşmasına dayalı ilişki sağlığı değerlendirmesi</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div className="mb-4 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">İlişki Puanı</span>
+                      <span className={`font-bold text-lg ${getRelationshipColor(relationshipScore)}`}>
+                        {relationshipScore}/100
+                      </span>
+                    </div>
+                    <Progress value={relationshipScore} className="h-3" />
+                    <div className="text-center font-medium mt-2 text-lg">
+                      <span className={getRelationshipColor(relationshipScore)}>
+                        {getRelationshipHealthLabel(relationshipScore)}
+                      </span>
+                    </div>
                   </div>
-                  <Progress value={relationshipScore} className="h-3" />
-                  <div className="text-center font-medium mt-2 text-lg">
-                    <span className={getRelationshipColor(relationshipScore)}>
-                      {getRelationshipHealthLabel(relationshipScore)}
-                    </span>
+                  
+                  <div className="mt-6">
+                    <h4 className="text-sm font-medium mb-3">İlişki Bulguları</h4>
+                    <div className="space-y-2">
+                      {dynamics && dynamics.map((insight, index) => (
+                        <div 
+                          key={index} 
+                          className={`p-3 rounded-lg text-sm flex items-start gap-2 ${
+                            insight.type === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : 
+                            insight.type === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : 
+                            'bg-amber-100 dark:bg-amber-900/20'
+                          }`}
+                        >
+                          <div className="mt-0.5">{insight.icon}</div>
+                          <span>{insight.text}</span>
+                        </div>
+                      ))}
+                      
+                      {(!dynamics || dynamics.length === 0) && (
+                        <div className="text-muted-foreground text-sm italic">
+                          Veri yetersiz. Daha doğru sonuçlar için daha fazla mesaj gerekiyor.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
-                <div className="mt-6">
-                  <h4 className="text-sm font-medium mb-3">İlişki Bulguları</h4>
-                  <div className="space-y-2">
-                    {dynamics && dynamics.map((insight, index) => (
-                      <div 
-                        key={index} 
-                        className={`p-3 rounded-lg text-sm flex items-start gap-2 ${
-                          insight.type === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : 
-                          insight.type === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : 
-                          'bg-amber-100 dark:bg-amber-900/20'
-                        }`}
-                      >
-                        <div className="mt-0.5">{insight.icon}</div>
-                        <span>{insight.text}</span>
-                      </div>
-                    ))}
-                    
-                    {(!dynamics || dynamics.length === 0) && (
-                      <div className="text-muted-foreground text-sm italic">
-                        Veri yetersiz. Daha doğru sonuçlar için daha fazla mesaj gerekiyor.
-                      </div>
-                    )}
+                <div>
+                  <h4 className="text-sm font-medium mb-3">İletişim Dağılımı</h4>
+                  <div className="h-[220px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={Object.entries(participantStats).map(([name, data]: [string, any]) => ({
+                            name,
+                            value: data.messageCount
+                          }))}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={isMobile ? 40 : 60}
+                          outerRadius={isMobile ? 80 : 90}
+                          paddingAngle={2}
+                          dataKey="value"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        >
+                          {Object.entries(participantStats).map(([name]) => (
+                            <Cell key={name} fill={participantColors[name]} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          formatter={(value: any) => [`${value} mesaj`, '']}
+                          labelFormatter={(name: any) => `${name}`}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <RelationshipInsightCard 
+            title="Özür Dinamikleri" 
+            description="Sohbetteki özür dileme desenleri" 
+            icon={<Shield className="h-5 w-5 text-blue-600" />}
+            color="bg-blue-100"
+          >
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-secondary/50 rounded-xl p-3 text-center">
+                  <div className="text-xs text-muted-foreground mb-1">Toplam Özür</div>
+                  <div className="text-2xl font-medium">{apologies.total}</div>
+                </div>
+                <div className="bg-secondary/50 rounded-xl p-3 text-center">
+                  <div className="text-xs text-muted-foreground mb-1">En Çok Özür Dileyen</div>
+                  <div className="text-lg font-medium truncate">{apologies.mostApologetic || "Yok"}</div>
+                </div>
+              </div>
               
-              <div>
-                <h4 className="text-sm font-medium mb-3">İletişim Dağılımı</h4>
-                <div className="h-[220px]">
+              {apologies.apologyExamples && apologies.apologyExamples.length > 0 ? (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium">Örnek Özürler</h4>
+                  {apologies.apologyExamples.slice(0, 2).map((example, index) => (
+                    <div key={index} className="bg-secondary/30 rounded-xl p-3">
+                      <div className="flex items-start justify-between mb-1">
+                        <div className="flex items-center">
+                          <User className="h-3.5 w-3.5 mr-1.5" />
+                          <span className="text-xs text-muted-foreground">{example.sender}</span>
+                        </div>
+                        {example.sincerity !== undefined && (
+                          <Badge variant={example.sincerity > 0.7 ? "default" : "secondary"} className="text-[10px] py-0 px-2 h-4">
+                            {example.sincerity > 0.7 ? "Samimi" : example.sincerity > 0.4 ? "Orta" : "Düşük"} 
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm">{example.content}</p>
+                      <div className="mt-1.5 text-xs font-medium text-blue-600/80">
+                        {example.text}
+                      </div>
+                      {example.context && (
+                        <div className="mt-1 text-xs text-muted-foreground italic">
+                          Bağlam: {example.context}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground italic">
+                  Sohbette herhangi bir özür ifadesi bulunamadı.
+                </div>
+              )}
+              
+              {apologyData.length > 0 && (
+                <div className="h-[180px] mt-4">
+                  <h4 className="text-sm font-medium mb-2">Özür Dağılımı</h4>
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={Object.entries(participantStats).map(([name, data]: [string, any]) => ({
-                          name,
-                          value: data.messageCount
-                        }))}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={isMobile ? 40 : 60}
-                        outerRadius={isMobile ? 80 : 90}
-                        paddingAngle={2}
-                        dataKey="value"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {Object.entries(participantStats).map(([name]) => (
-                          <Cell key={name} fill={participantColors[name]} />
+                    <BarChart
+                      data={apologyData}
+                      margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    >
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip formatter={(value: any) => [`${value} özür`, '']} />
+                      <Bar dataKey="count" fill="#3B82F6">
+                        {apologyData.map((entry, index) => (
+                          <Cell key={index} fill={participantColors[entry.name] || "#3B82F6"} />
                         ))}
-                      </Pie>
-                      <Tooltip 
-                        formatter={(value: any) => [`${value} mesaj`, '']}
-                        labelFormatter={(name: any) => `${name}`}
-                      />
-                    </PieChart>
+                      </Bar>
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
+              )}
+            </div>
+          </RelationshipInsightCard>
+          
+          <RelationshipInsightCard
+            title="Sevgi İfadeleri" 
+            description="Sohbetteki romantik ifadeler ve sevgi göstergeleri"
+            icon={<Heart className="h-5 w-5 text-rose-600" />}
+            color="bg-rose-100"
+          >
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-secondary/50 rounded-xl p-3 text-center">
+                  <div className="text-xs text-muted-foreground mb-1">Toplam Sevgi İfadesi</div>
+                  <div className="text-2xl font-medium">{loveExpressions.total}</div>
+                </div>
+                <div className="bg-secondary/50 rounded-xl p-3 text-center">
+                  <div className="text-xs text-muted-foreground mb-1">En Romantik Kişi</div>
+                  <div className="text-lg font-medium truncate">{loveExpressions.mostRomantic || "Yok"}</div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium">En Çok Kullanılan İfadeler</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {loveExpressions.mostCommonExpressions && 
+                   loveExpressions.mostCommonExpressions.length > 0 ? (
+                    loveExpressions.mostCommonExpressions.slice(0, 4).map((expression, index) => (
+                      <div key={index} className="bg-secondary/30 rounded-xl p-3 flex items-center justify-between">
+                        <div className="flex items-center">
+                          <Heart className="h-3.5 w-3.5 text-rose-500 mr-2" />
+                          <span>{expression.text}</span>
+                        </div>
+                        <span className="text-sm font-medium">{expression.count}x</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-2 text-sm text-muted-foreground italic">
+                      Sohbette sevgi ifadeleri bulunamadı.
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium">Sevgi İfadesi Örnekleri</h4>
+                {getAllLoveExpressions().length > 0 ? (
+                  getAllLoveExpressions().map((example, index) => (
+                    <div key={index} className="bg-secondary/30 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center">
+                          <User className="h-3.5 w-3.5 mr-1.5" />
+                          <span className="text-xs text-muted-foreground">{example.sender}</span>
+                        </div>
+                        <Badge variant={example.intensity === 'Yüksek' ? "default" : "secondary"} className="text-xs py-0">
+                          {example.intensity} Yoğunluk
+                        </Badge>
+                      </div>
+                      <p className="text-sm">{example.content}</p>
+                      <div className="mt-1.5 text-xs font-medium text-rose-600/80">
+                        {example.text}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-sm text-muted-foreground italic">
+                    Örnek sevgi ifadeleri bulunamadı.
+                  </div>
+                )}
+              </div>
+            </div>
+          </RelationshipInsightCard>
+        </div>
+        
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle>Sevgi İfadesi Dağılımı</CardTitle>
+            <CardDescription>Katılımcıların sevgi ifadesi kullanım analizi</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={loveExpressionData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip formatter={(value: any) => [`${value}`, '']} />
+                  <Bar name="Sevgi İfadeleri" dataKey="count" fill="#ec4899">
+                    {loveExpressionData.map((entry) => (
+                      <Cell key={entry.name} fill={participantColors[entry.name] || "#ec4899"} />
+                    ))}
+                  </Bar>
+                  <Bar name="Seni Seviyorum" dataKey="iLoveYouCount" fill="#be185d">
+                    {loveExpressionData.map((entry) => (
+                      <Cell key={entry.name} fill={participantColors[entry.name] ? participantColors[entry.name] + "AA" : "#be185d"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle>İlişki İpuçları</CardTitle>
+            <CardDescription>Konuşma analizine dayalı iletişim önerileri</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-800">
+                    <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                  </div>
+                  <h3 className="font-medium">İletişimi Güçlendirme</h3>
+                </div>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex gap-2">
+                    <ArrowRight className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>Düşüncelerinizi açıkça ifade ederken karşı tarafın fikirlerine saygı gösterin</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <ArrowRight className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>Aktif dinleme yapın ve anladığınızı göstermek için soruları olumlu şekilde cevaplayın</span>
+                  </li>
+                  {relationshipScore < 65 && (
+                    <li className="flex gap-2">
+                      <ArrowRight className="h-4 w-4 shrink-0 mt-0.5" />
+                      <span>Konuşma başlatma ve yanıtlama dengesini iyileştirmeye çalışın</span>
+                    </li>
+                  )}
+                </ul>
+              </div>
+              
+              <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-800">
+                    <Shield className="h-5 w-5 text-amber-600 dark:text-amber-300" />
+                  </div>
+                  <h3 className="font-medium">Dikkat Edilmesi Gerekenler</h3>
+                </div>
+                <ul className="space-y-2 text-sm">
+                  {loveExpressionData.length >= 2 && loveExpressionData[0].count / (loveExpressionData[1].count || 1) > 3 && (
+                    <li className="flex gap-2">
+                      <ArrowRight className="h-4 w-4 shrink-0 mt-0.5" />
+                      <span>Sevgi ifadelerindeki dengesizlik ilişkide sorun yaratabilir</span>
+                    </li>
+                  )}
+                  {apologyData.length >= 2 && apologyData[0].count / (apologyData[1].count || 1) > 3 && (
+                    <li className="flex gap-2">
+                      <ArrowRight className="h-4 w-4 shrink-0 mt-0.5" />
+                      <span>Bir tarafın sürekli özür dilemesi sağlıklı olmayabilir</span>
+                    </li>
+                  )}
+                  <li className="flex gap-2">
+                    <ArrowRight className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>Manipülatif dil kullanımından kaçının, duygularınızı doğrudan ifade edin</span>
+                  </li>
+                </ul>
               </div>
             </div>
           </CardContent>
         </Card>
-      )}
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <RelationshipInsightCard 
-          title="Özür Dinamikleri" 
-          description="Sohbetteki özür dileme desenleri" 
-          icon={<Shield className="h-5 w-5 text-blue-600" />}
-          color="bg-blue-100"
-        >
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-secondary/50 rounded-xl p-3 text-center">
-                <div className="text-xs text-muted-foreground mb-1">Toplam Özür</div>
-                <div className="text-2xl font-medium">{apologies.total}</div>
-              </div>
-              <div className="bg-secondary/50 rounded-xl p-3 text-center">
-                <div className="text-xs text-muted-foreground mb-1">En Çok Özür Dileyen</div>
-                <div className="text-lg font-medium truncate">{apologies.mostApologetic || "Yok"}</div>
-              </div>
-            </div>
-            
-            {apologies.apologyExamples && apologies.apologyExamples.length > 0 ? (
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium">Örnek Özürler</h4>
-                {apologies.apologyExamples.slice(0, 2).map((example, index) => (
-                  <div key={index} className="bg-secondary/30 rounded-xl p-3">
-                    <div className="flex items-start justify-between mb-1">
-                      <div className="flex items-center">
-                        <User className="h-3.5 w-3.5 mr-1.5" />
-                        <span className="text-xs text-muted-foreground">{example.sender}</span>
-                      </div>
-                      {example.sincerity !== undefined && (
-                        <Badge variant={example.sincerity > 0.7 ? "default" : "secondary"} className="text-[10px] py-0 px-2 h-4">
-                          {example.sincerity > 0.7 ? "Samimi" : example.sincerity > 0.4 ? "Orta" : "Düşük"} 
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm">{example.content}</p>
-                    <div className="mt-1.5 text-xs font-medium text-blue-600/80">
-                      {example.text}
-                    </div>
-                    {example.context && (
-                      <div className="mt-1 text-xs text-muted-foreground italic">
-                        Bağlam: {example.context}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground italic">
-                Sohbette herhangi bir özür ifadesi bulunamadı.
-              </div>
-            )}
-            
-            {apologyData.length > 0 && (
-              <div className="h-[180px] mt-4">
-                <h4 className="text-sm font-medium mb-2">Özür Dağılımı</h4>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={apologyData}
-                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
-                  >
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip formatter={(value: any) => [`${value} özür`, '']} />
-                    <Bar dataKey="count" fill="#3B82F6">
-                      {apologyData.map((entry, index) => (
-                        <Cell key={index} fill={participantColors[entry.name] || "#3B82F6"} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
-        </RelationshipInsightCard>
-        
-        <RelationshipInsightCard
-          title="Sevgi İfadeleri" 
-          description="Sohbetteki romantik ifadeler ve sevgi göstergeleri"
-          icon={<Heart className="h-5 w-5 text-rose-600" />}
-          color="bg-rose-100"
-        >
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-secondary/50 rounded-xl p-3 text-center">
-                <div className="text-xs text-muted-foreground mb-1">Toplam Sevgi İfadesi</div>
-                <div className="text-2xl font-medium">{loveExpressions.total}</div>
-              </div>
-              <div className="bg-secondary/50 rounded-xl p-3 text-center">
-                <div className="text-xs text-muted-foreground mb-1">En Romantik Kişi</div>
-                <div className="text-lg font-medium truncate">{loveExpressions.mostRomantic || "Yok"}</div>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium">En Çok Kullanılan İfadeler</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {loveExpressions.mostCommonExpressions && 
-                 loveExpressions.mostCommonExpressions.length > 0 ? (
-                  loveExpressions.mostCommonExpressions.slice(0, 4).map((expression, index) => (
-                    <div key={index} className="bg-secondary/30 rounded-xl p-3 flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Heart className="h-3.5 w-3.5 text-rose-500 mr-2" />
-                        <span>{expression.text}</span>
-                      </div>
-                      <span className="text-sm font-medium">{expression.count}x</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-2 text-sm text-muted-foreground italic">
-                    Sohbette sevgi ifadeleri bulunamadı.
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium">Sevgi İfadesi Örnekleri</h4>
-              {getAllLoveExpressions().length > 0 ? (
-                getAllLoveExpressions().map((example, index) => (
-                  <div key={index} className="bg-secondary/30 rounded-xl p-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center">
-                        <User className="h-3.5 w-3.5 mr-1.5" />
-                        <span className="text-xs text-muted-foreground">{example.sender}</span>
-                      </div>
-                      <Badge variant={example.intensity === 'Yüksek' ? "default" : "secondary"} className="text-xs py-0">
-                        {example.intensity} Yoğunluk
-                      </Badge>
-                    </div>
-                    <p className="text-sm">{example.content}</p>
-                    <div className="mt-1.5 text-xs font-medium text-rose-600/80">
-                      {example.text}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-sm text-muted-foreground italic">
-                  Örnek sevgi ifadeleri bulunamadı.
-                </div>
-              )}
-            </div>
-          </div>
-        </RelationshipInsightCard>
       </div>
-      
-      <Card className="shadow-soft">
-        <CardHeader>
-          <CardTitle>Sevgi İfadesi Dağılımı</CardTitle>
-          <CardDescription>Katılımcıların sevgi ifadesi kullanım analizi</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={loveExpressionData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(value: any) => [`${value}`, '']} />
-                <Bar name="Sevgi İfadeleri" dataKey="count" fill="#ec4899">
-                  {loveExpressionData.map((entry) => (
-                    <Cell key={entry.name} fill={participantColors[entry.name] || "#ec4899"} />
-                  ))}
-                </Bar>
-                <Bar name="Seni Seviyorum" dataKey="iLoveYouCount" fill="#be185d">
-                  {loveExpressionData.map((entry) => (
-                    <Cell key={entry.name} fill={participantColors[entry.name] ? participantColors[entry.name] + "AA" : "#be185d"} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card className="shadow-soft">
-        <CardHeader>
-          <CardTitle>İlişki İpuçları</CardTitle>
-          <CardDescription>Konuşma analizine dayalı iletişim önerileri</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-800">
-                  <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-300" />
-                </div>
-                <h3 className="font-medium">İletişimi Güçlendirme</h3>
-              </div>
-              <ul className="space-y-2 text-sm">
-                <li className="flex gap-2">
-                  <ArrowRight className="h-4 w-4 shrink-0 mt-0.5" />
-                  <span>Düşüncelerinizi açıkça ifade ederken karşı tarafın fikirlerine saygı gösterin</span>
-                </li>
-                <li className="flex gap-2">
-                  <ArrowRight className="h-4 w-4 shrink-0 mt-0.5" />
-                  <span>Aktif dinleme yapın ve anladığınızı göstermek için soruları olumlu şekilde cevaplayın</span>
-                </li>
-                {relationshipScore < 65 && (
-                  <li className="flex gap-2">
-                    <ArrowRight className="h-4 w-4 shrink-0 mt-0.5" />
-                    <span>Konuşma başlatma ve yanıtlama dengesini iyileştirmeye çalışın</span>
-                  </li>
-                )}
-              </ul>
-            </div>
-            
-            <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-800">
-                  <Shield className="h-5 w-5 text-amber-600 dark:text-amber-300" />
-                </div>
-                <h3 className="font-medium">Dikkat Edilmesi Gerekenler</h3>
-              </div>
-              <ul className="space-y-2 text-sm">
-                {loveExpressionData.length >= 2 && loveExpressionData[0].count / (loveExpressionData[1].count || 1) > 3 && (
-                  <li className="flex gap-2">
-                    <ArrowRight className="h-4 w-4 shrink-0 mt-0.5" />
-                    <span>Sevgi ifadelerindeki dengesizlik ilişkide sorun yaratabilir</span>
-                  </li>
-                )}
-                {apologyData.length >= 2 && apologyData[0].count / (apologyData[1].count || 1) > 3 && (
-                  <li className="flex gap-2">
-                    <ArrowRight className="h-4 w-4 shrink-0 mt-0.5" />
-                    <span>Bir tarafın sürekli özür dilemesi sağlıklı olmayabilir</span>
-                  </li>
-                )}
-                <li className="flex gap-2">
-                  <ArrowRight className="h-4 w-4 shrink-0 mt-0.5" />
-                  <span>Manipülatif dil kullanımından kaçının, duygularınızı doğrudan ifade edin</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    </SubscriptionCheck>
   );
 };
 

@@ -43,9 +43,6 @@ const registerSchema = z.object({
   path: ["confirmPassword"],
 });
 
-// Special admin email that will receive full access
-const ADMIN_EMAIL = 'mehmetirem305@gmail.com';
-
 const Auth = () => {
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [isLoading, setIsLoading] = useState(false);
@@ -70,31 +67,6 @@ const Auth = () => {
     },
   });
 
-  const setupSuperuserSubscription = async (email: string) => {
-    if (email === ADMIN_EMAIL) {
-      try {
-        // Call the database function to set up admin subscription
-        // Using type assertion to bypass TypeScript error
-        const { error } = await supabase.rpc('setup_superuser_subscription' as any);
-        
-        if (error) {
-          console.error('Error setting up admin subscription:', error);
-          return;
-        }
-        
-        // Refresh subscription data in the context
-        await refreshSubscription();
-        
-        toast({
-          title: 'Yönetici hesabı aktifleştirildi',
-          description: 'Tüm premium özelliklere erişim sağlandı',
-        });
-      } catch (error) {
-        console.error('Error in setupSuperuserSubscription:', error);
-      }
-    }
-  };
-
   const handleLogin = async (values: z.infer<typeof loginSchema>) => {
     try {
       setIsLoading(true);
@@ -104,11 +76,6 @@ const Auth = () => {
       });
 
       if (error) throw error;
-
-      // Check if this is the admin account and set up subscription if needed
-      if (values.email === ADMIN_EMAIL) {
-        await setupSuperuserSubscription(values.email);
-      }
 
       toast({
         title: 'Giriş başarılı',
@@ -137,20 +104,12 @@ const Auth = () => {
 
       if (error) throw error;
 
-      // If this is the admin email, set up their subscription immediately
-      if (values.email === ADMIN_EMAIL) {
-        await setupSuperuserSubscription(values.email);
-      }
-
       toast({
         title: 'Kayıt başarılı',
         description: 'Hesabınız oluşturuldu. E-posta adresinize gönderilen doğrulama bağlantısına tıklayarak hesabınızı aktifleştirebilirsiniz.',
       });
-
-      // If this is the admin account, switch to login tab so they can login right away
-      if (values.email === ADMIN_EMAIL) {
-        setActiveTab('login');
-      }
+      
+      setActiveTab('login');
     } catch (error: any) {
       toast({
         title: 'Kayıt başarısız',

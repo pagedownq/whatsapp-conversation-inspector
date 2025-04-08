@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -14,8 +15,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogIn, LogOut, ArrowLeft, Upload, Crown } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { LogOut, ArrowLeft, Upload } from 'lucide-react';
+import PremiumFeatures from '@/components/PremiumFeatures';
 
 const Index = () => {
   const [uploadMode, setUploadMode] = useState<boolean>(true);
@@ -213,38 +214,25 @@ const Index = () => {
         >
           <Header />
           
-          <main className="container mx-auto max-w-7xl flex-1 pb-16 overflow-hidden">
-            {/* User info and auth buttons in a more central location */}
-            <div className="flex justify-center items-center my-6">
-              {user ? (
-                <div className="flex items-center gap-3 p-3 bg-card rounded-lg shadow-sm border">
-                  <div className="text-sm text-muted-foreground">
-                    {user.email}
-                  </div>
-                  {subscription?.isActive && (
-                    <Badge 
-                      className="bg-gradient-to-r from-amber-200 to-amber-500/80 text-purple-800 font-medium border-amber-300 backdrop-blur-sm animate-pulse-slow"
-                    >
-                      <Crown className="h-3 w-3 mr-1 text-amber-800" /> Premium
-                    </Badge>
-                  )}
-                  <Button variant="outline" size="sm" onClick={() => signOut()}>
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Çıkış Yap
-                  </Button>
+          {/* Premium Features Component */}
+          <PremiumFeatures />
+          
+          {/* Only show user info if logged in */}
+          {user && (
+            <div className="flex justify-center items-center mb-6">
+              <div className="flex items-center gap-3 p-3 bg-card rounded-lg shadow-sm border">
+                <div className="text-sm text-muted-foreground">
+                  {user.email}
                 </div>
-              ) : (
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/auth')}
-                  className="flex items-center gap-2"
-                >
-                  <LogIn className="h-4 w-4 mr-1" />
-                  Giriş Yap
+                <Button variant="outline" size="sm" onClick={() => signOut()}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Çıkış Yap
                 </Button>
-              )}
+              </div>
             </div>
-            
+          )}
+          
+          <main className="container mx-auto max-w-7xl flex-1 pb-16 overflow-hidden">
             {renderContent()}
           </main>
           

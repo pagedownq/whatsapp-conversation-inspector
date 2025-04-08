@@ -65,9 +65,7 @@ const EmptyState = ({ onUploadClick }: { onUploadClick: () => void }) => {
         ) : (
           subscription?.isActive ? (
             <div className="flex items-center gap-2">
-              <Badge 
-                className="bg-gradient-to-r from-amber-200 to-amber-500/80 text-purple-800 font-medium border-amber-300 backdrop-blur-sm animate-pulse-slow"
-              >
+              <Badge variant="premium">
                 <Crown className="h-3 w-3 mr-1 text-amber-800" /> Premium
               </Badge>
             </div>

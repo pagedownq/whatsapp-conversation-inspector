@@ -2,24 +2,14 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 
 const PremiumFeatures = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
-
-  const handleClick = () => {
-    if (!user) {
-      navigate('/auth');
-    } else {
-      navigate('/pricing');
-    }
-  };
 
   return (
     <div className="flex justify-center mt-4 mb-6 px-4">
       <motion.button
-        onClick={handleClick}
+        onClick={() => navigate('/pricing')}
         className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-amber-200/30 to-amber-500/30 text-purple-800 border border-amber-300/50 hover:bg-amber-200/40 transition-all shadow-soft hover:shadow-lg"
         whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.98 }}

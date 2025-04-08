@@ -45,7 +45,7 @@ const PremiumFeatures = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 gap-4 my-[2px] mx-0 py-0 px-[49px]">
+          <div className="grid grid-cols-1 gap-4 my-[2px] mx-0 py-0 px-0">
             {[{
             title: "Duygu Analizi",
             desc: "Sohbetinizdeki duygu değişimlerini görselleştirin ve duygusal eğilimleri tespit edin."
@@ -63,7 +63,7 @@ const PremiumFeatures = () => {
                   <Badge className="bg-amber-200 text-purple-800">Premium</Badge>
                   {feature.title}
                 </h3>
-                <p className="text-sm text-muted-foreground">{feature.desc}</p>
+                <p className="text-sm text-muted-foreground py-0 px-0">{feature.desc}</p>
               </div>)}
           </div>
 

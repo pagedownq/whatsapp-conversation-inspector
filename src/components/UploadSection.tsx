@@ -9,44 +9,41 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-
 interface UploadSectionProps {
   onFileProcessed: (content: string) => void;
 }
-
-const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
+const UploadSection: React.FC<UploadSectionProps> = ({
+  onFileProcessed
+}) => {
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { user, subscription } = useAuth();
+  const {
+    user,
+    subscription
+  } = useAuth();
   const navigate = useNavigate();
-
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       processFile(selectedFile);
     }
   };
-
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
   };
-
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
   };
-
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
     const items = e.dataTransfer.items;
     let droppedFile: File | null = null;
-    
     for (let i = 0; i < items.length; i++) {
       if (items[i].kind === 'file') {
         const item = items[i].getAsFile();
@@ -56,18 +53,15 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
         }
       }
     }
-    
     if (droppedFile) {
       processFile(droppedFile);
     } else {
       toast.error("Lütfen .zip veya .txt uzantılı dosya yükleyin");
     }
   };
-
   const processFile = async (selectedFile: File) => {
     setIsLoading(true);
     setFile(selectedFile);
-    
     try {
       if (selectedFile.name.endsWith('.txt')) {
         const content = await readTextFile(selectedFile);
@@ -76,33 +70,17 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
       } else if (selectedFile.name.endsWith('.zip')) {
         const zip = new JSZip();
         const zipContent = await zip.loadAsync(selectedFile);
-        
-        const textFiles = Object.keys(zipContent.files).filter(filename => 
-          filename.endsWith('.txt') && !zipContent.files[filename].dir
-        );
-        
+        const textFiles = Object.keys(zipContent.files).filter(filename => filename.endsWith('.txt') && !zipContent.files[filename].dir);
         if (textFiles.length === 0) {
           throw new Error("Zip dosyasında WhatsApp sohbet metni bulunamadı");
         }
-        
         const textFile = textFiles[0];
         const content = await zipContent.files[textFile].async('string');
-        
-        const processedContent = content
-          .replace(/Ã¼/g, 'ü')
-          .replace(/Ã§/g, 'ç')
-          .replace(/ÅŸ/g, 'ş')
-          .replace(/Ä±/g, 'ı')
-          .replace(/Ã¶/g, 'ö')
-          .replace(/ÄŸ/g, 'ğ')
-          .replace(/Ä°/g, 'İ');
-        
+        const processedContent = content.replace(/Ã¼/g, 'ü').replace(/Ã§/g, 'ç').replace(/ÅŸ/g, 'ş').replace(/Ä±/g, 'ı').replace(/Ã¶/g, 'ö').replace(/ÄŸ/g, 'ğ').replace(/Ä°/g, 'İ');
         console.log("Processed ZIP content length:", processedContent.length);
-        
         if (processedContent.trim() === '') {
           throw new Error("Zip içindeki dosya boş veya okunamadı");
         }
-        
         onFileProcessed(processedContent);
         toast.success("WhatsApp sohbeti başarıyla işlendi");
       } else {
@@ -116,11 +94,10 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
       setIsLoading(false);
     }
   };
-
   const readTextFile = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = e => {
         if (e.target?.result) {
           resolve(e.target.result as string);
         } else {
@@ -131,24 +108,19 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
       reader.readAsText(file);
     });
   };
-
   const handleButtonClick = () => {
     fileInputRef.current?.click();
   };
-
   const handleRemoveFile = () => {
     setFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
-
   const toggleGuide = () => {
     setShowGuide(!showGuide);
   };
-
-  const GuideSteps = () => (
-    <div className="mt-6 bg-secondary/70 rounded-xl p-4">
+  const GuideSteps = () => <div className="mt-6 bg-secondary/70 rounded-xl p-4">
       <h3 className="font-display font-medium text-lg mb-4 flex items-center gap-2 text-primary">
         <Smartphone className="h-5 w-5" />
         WhatsApp Sohbeti Nasıl Dışa Aktarılır?
@@ -217,14 +189,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
           </AccordionTrigger>
           <AccordionContent className="pl-9">
             <div className="rounded-lg overflow-hidden shadow-sm border border-border/50 bg-white">
-              <div className="p-3 flex flex-col gap-2">
-                <div className="absolute right-10 top-[240px] bg-white shadow-lg rounded-md border border-gray-200 z-10">
-                  <div className="py-2 px-4 text-xs hover:bg-gray-100">Sohbeti temizle</div>
-                  <div className="py-2 px-4 text-xs hover:bg-gray-100">Kişiyi engelle</div>
-                  <div className="py-2 px-4 text-xs text-primary font-medium">Sohbeti dışa aktar</div>
-                  <div className="py-2 px-4 text-xs hover:bg-gray-100">Sohbeti sil</div>
-                </div>
-              </div>
+              
             </div>
           </AccordionContent>
         </AccordionItem>
@@ -282,39 +247,23 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-    </div>
-  );
-
-  return (
-    <motion.div 
-      className="w-full max-w-xl mx-auto mb-8"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        accept=".zip,.txt"
-        className="hidden"
-        aria-label="Dosya yükle"
-      />
+    </div>;
+  return <motion.div className="w-full max-w-xl mx-auto mb-8" initial={{
+    opacity: 0,
+    y: 20
+  }} animate={{
+    opacity: 1,
+    y: 0
+  }} transition={{
+    duration: 0.5
+  }}>
+      <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".zip,.txt" className="hidden" aria-label="Dosya yükle" />
       
       <AnimatePresence mode="wait">
-        {!file ? (
-          <motion.div
-            key="upload-area"
-            className={`border-2 border-dashed rounded-2xl p-8 transition-colors ${
-              isDragging 
-                ? 'border-primary bg-primary/5' 
-                : 'border-border bg-secondary/50'
-            }`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            exit={{ opacity: 0, scale: 0.95 }}
-          >
+        {!file ? <motion.div key="upload-area" className={`border-2 border-dashed rounded-2xl p-8 transition-colors ${isDragging ? 'border-primary bg-primary/5' : 'border-border bg-secondary/50'}`} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} exit={{
+        opacity: 0,
+        scale: 0.95
+      }}>
             <div className="flex flex-col items-center text-center">
               <Upload className="h-10 w-10 text-primary mb-4" />
               <h3 className="font-display font-medium text-lg mb-2">WhatsApp Sohbet Dosyanızı Yükleyin</h3>
@@ -323,47 +272,24 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  className="rounded-full shadow-soft hover:shadow-lg btn-transition"
-                  onClick={handleButtonClick}
-                >
+                <Button className="rounded-full shadow-soft hover:shadow-lg btn-transition" onClick={handleButtonClick}>
                   <Upload className="mr-1 h-4 w-4" />
                   Dosya Seç
                 </Button>
 
-                <Button
-                  variant="outline"
-                  className="rounded-full hover:bg-secondary btn-transition"
-                  onClick={toggleGuide}
-                >
+                <Button variant="outline" className="rounded-full hover:bg-secondary btn-transition" onClick={toggleGuide}>
                   {showGuide ? 'Kılavuzu Gizle' : 'Nasıl Yapılır?'}
                 </Button>
 
                 <div className="flex items-center justify-center mt-3 sm:mt-0">
-                  {!user ? (
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate('/auth')}
-                      className="rounded-full"
-                    >
+                  {!user ? <Button variant="outline" onClick={() => navigate('/auth')} className="rounded-full">
                       Giriş Yap
-                    </Button>
-                  ) : subscription?.isActive ? (
-                    <Badge 
-                      className="bg-gradient-to-r from-amber-200 to-amber-500/80 text-purple-800 font-medium border-amber-300 backdrop-blur-sm animate-pulse-slow px-3 py-1.5"
-                    >
+                    </Button> : subscription?.isActive ? <Badge className="bg-gradient-to-r from-amber-200 to-amber-500/80 text-purple-800 font-medium border-amber-300 backdrop-blur-sm animate-pulse-slow px-3 py-1.5">
                       <Crown className="h-3 w-3 mr-1 text-amber-800" /> Premium
-                    </Badge>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate('/premium')}
-                      className="rounded-full bg-gradient-to-r from-amber-200/20 to-amber-500/20 text-purple-800 border-amber-300/50 hover:bg-amber-200/30 hover:text-purple-900"
-                    >
+                    </Badge> : <Button variant="outline" onClick={() => navigate('/premium')} className="rounded-full bg-gradient-to-r from-amber-200/20 to-amber-500/20 text-purple-800 border-amber-300/50 hover:bg-amber-200/30 hover:text-purple-900">
                       <Crown className="h-4 w-4 mr-1 text-amber-500" />
                       Premium Özellikler
-                    </Button>
-                  )}
+                    </Button>}
                 </div>
               </div>
               
@@ -373,15 +299,16 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
             </div>
             
             {showGuide && <GuideSteps />}
-          </motion.div>
-        ) : (
-          <motion.div
-            key="file-preview"
-            className="bg-card rounded-2xl p-6 shadow-soft"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-          >
+          </motion.div> : <motion.div key="file-preview" className="bg-card rounded-2xl p-6 shadow-soft" initial={{
+        opacity: 0,
+        scale: 0.9
+      }} animate={{
+        opacity: 1,
+        scale: 1
+      }} exit={{
+        opacity: 0,
+        scale: 0.9
+      }}>
             <div className="flex items-start justify-between">
               <div className="flex items-center">
                 <div className="bg-primary/10 p-2 rounded-lg mr-3">
@@ -395,33 +322,22 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
                 </div>
               </div>
               
-              <button 
-                onClick={handleRemoveFile} 
-                className="p-1.5 text-muted-foreground hover:text-destructive btn-transition rounded-full hover:bg-destructive/10"
-                disabled={isLoading}
-              >
+              <button onClick={handleRemoveFile} className="p-1.5 text-muted-foreground hover:text-destructive btn-transition rounded-full hover:bg-destructive/10" disabled={isLoading}>
                 <X className="h-5 w-5" />
               </button>
             </div>
             
             <div className="mt-4">
-              {isLoading ? (
-                <div className="flex items-center text-muted-foreground">
+              {isLoading ? <div className="flex items-center text-muted-foreground">
                   <div className="animate-spin mr-2 h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
                   Dosya işleniyor...
-                </div>
-              ) : (
-                <div className="flex items-center text-green-600">
+                </div> : <div className="flex items-center text-green-600">
                   <CheckCircle className="h-4 w-4 mr-2" />
                   <span>Dosya yüklendi, işleniyor...</span>
-                </div>
-              )}
+                </div>}
             </div>
-          </motion.div>
-        )}
+          </motion.div>}
       </AnimatePresence>
-    </motion.div>
-  );
+    </motion.div>;
 };
-
 export default UploadSection;

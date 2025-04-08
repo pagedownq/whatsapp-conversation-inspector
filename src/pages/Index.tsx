@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -138,12 +137,12 @@ const Index = () => {
       return (
         <>
           {!uploadVisible ? (
-            <div className="w-full max-w-4xl mx-auto">
+            <div className="w-full max-w-4xl mx-auto px-1 sm:px-4">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
-                className="bg-card border rounded-2xl p-8 shadow-md"
+                className="bg-card border rounded-xl sm:rounded-2xl p-3 sm:p-8 shadow-md"
               >
                 <EmptyState onUploadClick={handleUploadClick} />
               </motion.div>
@@ -153,16 +152,16 @@ const Index = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3 }}
-              className="w-full max-w-2xl mx-auto"
+              className="w-full max-w-2xl mx-auto px-1 sm:px-4"
             >
-              <div className="mb-4">
+              <div className="mb-3 sm:mb-4">
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={() => setUploadVisible(false)}
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-1 w-full sm:w-auto text-xs sm:text-sm"
                 >
-                  <ArrowLeft className="h-4 w-4" />
+                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
                   Geri Dön
                 </Button>
               </div>
@@ -175,24 +174,26 @@ const Index = () => {
     
     return (
       <>
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-3">          
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-3 sm:mb-6 gap-2 sm:gap-3 px-1 sm:px-4">          
           <div className="flex flex-wrap justify-center sm:justify-start gap-2 w-full sm:w-auto">
             <Button 
               onClick={handleReset} 
               variant="outline" 
-              className="whitespace-nowrap flex items-center gap-1"
+              className="whitespace-nowrap flex items-center gap-1 w-full sm:w-auto text-xs sm:text-sm"
             >
-              <Upload className="h-4 w-4" />
+              <Upload className="h-3 w-3 sm:h-4 sm:w-4" />
               Yeni Dosya Yükle
             </Button>
           </div>
         </div>
         
         {analysisStats && (
-          <AnalysisDisplay 
-            chatData={parsedMessages}
-            onReset={handleReset}
-          />
+          <div className="px-1 sm:px-4">
+            <AnalysisDisplay 
+              chatData={parsedMessages}
+              onReset={handleReset}
+            />
+          </div>
         )}
       </>
     );
@@ -207,7 +208,7 @@ const Index = () => {
       
       {hasConsent && (
         <motion.div 
-          className="min-h-screen flex flex-col bg-gradient-to-b from-background to-background/95 px-2 sm:px-4 md:px-6"
+          className="min-h-screen flex flex-col bg-gradient-to-b from-background to-background/95 px-1 sm:px-4 md:px-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
@@ -219,20 +220,20 @@ const Index = () => {
           
           {/* Only show user info if logged in */}
           {user && (
-            <div className="flex justify-center items-center mb-6">
-              <div className="flex items-center gap-3 p-3 bg-card rounded-lg shadow-sm border">
-                <div className="text-sm text-muted-foreground">
+            <div className="flex justify-center items-center mb-3 sm:mb-6">
+              <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-card rounded-lg shadow-sm border w-full sm:w-auto max-w-sm mx-2 sm:mx-0">
+                <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
                   {user.email}
                 </div>
-                <Button variant="outline" size="sm" onClick={() => signOut()}>
-                  <LogOut className="h-4 w-4 mr-2" />
+                <Button variant="outline" size="sm" onClick={() => signOut()} className="w-full sm:w-auto text-xs sm:text-sm">
+                  <LogOut className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Çıkış Yap
                 </Button>
               </div>
             </div>
           )}
           
-          <main className="container mx-auto max-w-7xl flex-1 pb-16 overflow-hidden">
+          <main className="container mx-auto max-w-7xl flex-1 pb-6 sm:pb-16 overflow-hidden">
             {renderContent()}
           </main>
           

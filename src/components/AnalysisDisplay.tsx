@@ -4,12 +4,14 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 import { useCountAnimation, useProgressAnimation } from '@/hooks/useAnimation';
 import { ChatMessage } from '@/utils/parseChat';
 import { analyzeChat, ChatStats, ParticipantStats } from '@/utils/analyzeChat';
-import { Clock, MessageSquare, Type, Smile, User, Calendar, Activity, BarChart2, Image, Video, FileText, Link, StickerIcon, Film, Mic, AlignJustify, HeartIcon, BrainIcon, ThumbsDownIcon, Brain, Heart, ChevronsRight, MessageCircle, MessagesSquare } from 'lucide-react';
+import { Clock, MessageSquare, Type, Smile, User, Calendar, Activity, BarChart2, Image, Video, FileText, Link, StickerIcon, Film, Mic, AlignJustify, HeartIcon, BrainIcon, ThumbsDownIcon, Brain, Heart, ChevronsRight, MessageCircle, MessagesSquare, Download } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getSentimentColor, getManipulationLevel, getManipulationTypeLabel } from '@/utils/sentimentAnalysis';
 import WordAnalysisSection from './WordAnalysisSection';
 import SentimentAnalysisSection from './SentimentAnalysisSection';
 import RelationshipAnalysisSection from './RelationshipAnalysisSection';
+import { Button } from '@/components/ui/button';
+import { exportAnalysisToCSV, downloadCSV } from '@/utils/exportAnalysis';
 
 interface AnalysisDisplayProps {
   chatData: ChatMessage[];
@@ -190,6 +192,18 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
+      <div className="flex justify-end mb-4">
+        <Button
+          onClick={() => {
+            const exportData = exportAnalysisToCSV(stats);
+            downloadCSV(exportData);
+          }}
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+        >
+          <Download className="h-4 w-4" />
+          Analizi İndir (CSV)
+        </Button>
+      </div>
       {isMobile && (
         <div className="flex items-center justify-center gap-2 mb-4 p-2 bg-secondary/50 rounded-lg text-sm">
           <ChevronsRight className="h-4 w-4 animate-pulse" />

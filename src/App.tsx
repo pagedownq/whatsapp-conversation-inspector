@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Rejected from "./pages/Rejected";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Pricing from "./pages/Pricing";
 import "./App.css";
 
 // Create a new QueryClient instance
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/rejected" element={<Rejected />} />
+            <Route path="/pricing" element={<Pricing />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

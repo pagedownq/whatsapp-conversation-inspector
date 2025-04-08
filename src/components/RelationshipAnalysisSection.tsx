@@ -42,22 +42,22 @@ const RelationshipInsightCard = ({
   color: string;
   children: React.ReactNode;
 }) => (
-  <Card className="shadow-soft h-full">
-    <CardHeader className="pb-2">
-      <div className="flex items-start justify-between">
+  <div className="bg-card rounded-lg border shadow-sm">
+    <div className="p-6">
+      <div className="flex items-start justify-between mb-4">
         <div>
-          <CardTitle className="text-lg font-medium">{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
+          <h3 className="text-xl font-semibold">{title}</h3>
+          <p className="text-muted-foreground">{description}</p>
         </div>
-        <div className={`p-2 rounded-full ${color}`}>
+        <div className={`p-3 rounded-full ${color}`}>
           {icon}
         </div>
       </div>
-    </CardHeader>
-    <CardContent>
-      {children}
-    </CardContent>
-  </Card>
+      <div className="space-y-4">
+        {children}
+      </div>
+    </div>
+  </div>
 );
 
 const RelationshipAnalysisSection: React.FC<RelationshipAnalysisSectionProps> = ({
@@ -118,6 +118,27 @@ const RelationshipAnalysisSection: React.FC<RelationshipAnalysisSectionProps> = 
         text: `${dominant} sohbette daha baskın, daha fazla mesaj gönderiyor`,
         icon: <TrendingUp size={16} className="text-amber-500" />,
         type: "neutral"  
+      });
+    }
+
+    // Duygusal derinlik analizi
+    const emotionalDepthScores = Object.entries(participantStats).map(([name, data]: [string, any]) => ({
+      name,
+      score: data.intimacy?.emotionalDepth || 0
+    }));
+
+    const avgEmotionalDepth = emotionalDepthScores.reduce((sum, item) => sum + item.score, 0) / emotionalDepthScores.length;
+    if (avgEmotionalDepth > 0.7) {
+      insights.push({
+        text: "İlişkide yüksek duygusal derinlik ve açıklık var",
+        icon: <Heart size={16} className="text-green-500" />,
+        type: "positive"
+      });
+    } else if (avgEmotionalDepth < 0.3) {
+      insights.push({
+        text: "İlişkide daha fazla duygusal paylaşım faydalı olabilir",
+        icon: <Heart size={16} className="text-amber-500" />,
+        type: "warning"
       });
     }
     
@@ -205,13 +226,33 @@ const RelationshipAnalysisSection: React.FC<RelationshipAnalysisSectionProps> = 
     if (messageBalance < 15) score += 10;
     else if (messageBalance > 40) score -= 10;
     
-    // 2. Sevgi ifadeleri
+    // 2. Sevgi ifadeleri ve duygusal derinlik
     const totalLoveExpressions = loveExpressions.total;
-    if (totalLoveExpressions > 20) score += 15;
-    else if (totalLoveExpressions > 10) score += 10;
-    else if (totalLoveExpressions > 5) score += 5;
+    const emotionalDepth = Object.values(participantStats).reduce((sum: number, data: any) => {
+      return sum + (data.intimacy?.emotionalDepth || 0);
+    }, 0) / Object.keys(participantStats).length;
+
+    if (totalLoveExpressions > 20 && emotionalDepth > 0.7) score += 20;
+    else if (totalLoveExpressions > 10 && emotionalDepth > 0.5) score += 15;
+    else if (totalLoveExpressions > 5 && emotionalDepth > 0.3) score += 10;
     
-    // 3. İletişim süresi - uzun süreli ilişki
+    // 3. Güven ve açıklık
+    const vulnerabilityScore = Object.values(participantStats).reduce((sum: number, data: any) => {
+      return sum + (data.intimacy?.vulnerabilitySharing || 0);
+    }, 0) / Object.keys(participantStats).length;
+
+    if (vulnerabilityScore > 0.7) score += 15;
+    else if (vulnerabilityScore > 0.4) score += 10;
+    
+    // 4. İletişimde karşılıklılık
+    const reciprocityScore = Object.values(participantStats).reduce((sum: number, data: any) => {
+      return sum + (data.intimacy?.reciprocity || 0);
+    }, 0) / Object.keys(participantStats).length;
+
+    if (reciprocityScore > 0.8) score += 15;
+    else if (reciprocityScore > 0.6) score += 10;
+    
+    // 5. İletişim süresi - uzun süreli ilişki
     const days = Object.values(participantStats)[0].conversationDuration || 0;
     if (days > 365) score += 10;
     else if (days > 180) score += 7;
@@ -223,17 +264,25 @@ const RelationshipAnalysisSection: React.FC<RelationshipAnalysisSectionProps> = 
     const totalManipulation = manipulationCounts.reduce((sum: number, count: number) => sum + count, 0);
     
     if (totalManipulation > 20) score -= 20;
-    else if (totalManipulation > 10) score -= 10;
-    else if (totalManipulation > 5) score -= 5;
+    else if (totalManipulation > 10) score -= 15;
+    else if (totalManipulation > 5) score -= 10;
     
-    // 2. Aşırı dengesiz özür
+    // 2. Aşırı dengesiz özür ve güç dinamiği
     if (apologyData.length >= 2) {
       const apologyRatio = (apologyData[0].count && apologyData[1].count) ? 
         apologyData[0].count / apologyData[1].count : 0;
       
-      if (apologyRatio > 5) score -= 10;
-      else if (apologyRatio > 3) score -= 5;
+      if (apologyRatio > 5) score -= 15;
+      else if (apologyRatio > 3) score -= 10;
     }
+    
+    // 3. Duygusal tutarsızlık
+    const consistencyScore = Object.values(participantStats).reduce((sum: number, data: any) => {
+      return sum + (data.intimacy?.consistency || 0);
+    }, 0) / Object.keys(participantStats).length;
+
+    if (consistencyScore < 0.3) score -= 15;
+    else if (consistencyScore < 0.5) score -= 10;
     
     return Math.max(0, Math.min(100, score));
   };
@@ -260,13 +309,11 @@ const RelationshipAnalysisSection: React.FC<RelationshipAnalysisSectionProps> = 
     <SubscriptionCheck>
       <div className="space-y-6">
         {Object.keys(participantStats).length >= 2 && (
-          <Card className="shadow-soft">
-            <CardHeader className="pb-2">
-              <CardTitle>İlişki Sağlığı</CardTitle>
-              <CardDescription>WhatsApp konuşmasına dayalı ilişki sağlığı değerlendirmesi</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-card rounded-lg border shadow-sm mb-8">
+            <div className="p-6">
+              <h2 className="text-2xl font-bold mb-2">İlişki Sağlığı</h2>
+              <p className="text-muted-foreground mb-6">WhatsApp konuşmasına dayalı ilişki sağlığı değerlendirmesi</p>
+              <div className="grid grid-cols-1 gap-8">
                 <div>
                   <div className="mb-4 space-y-2">
                     <div className="flex justify-between items-center">
@@ -341,11 +388,11 @@ const RelationshipAnalysisSection: React.FC<RelationshipAnalysisSectionProps> = 
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-8">
           <RelationshipInsightCard 
             title="Özür Dinamikleri" 
             description="Sohbetteki özür dileme desenleri" 

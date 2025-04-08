@@ -72,7 +72,7 @@ const EmptyState = ({ onUploadClick }: { onUploadClick: () => void }) => {
           ) : (
             <Button
               variant="outline"
-              onClick={() => navigate('/premium')}
+              onClick={() => navigate('/pricing')}
               className="rounded-full bg-gradient-to-r from-amber-200/20 to-amber-500/20 text-purple-800 border-amber-300/50 hover:bg-amber-200/30 hover:text-purple-900"
             >
               <Crown className="h-4 w-4 mr-1 text-amber-500" />

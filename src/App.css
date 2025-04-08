@@ -107,3 +107,54 @@ input:focus, textarea:focus, select:focus {
 .button-hover-effect:hover {
   transform: translateY(-2px);
 }
+
+/* Premium badge animation */
+.premium-badge {
+  background: linear-gradient(135deg, rgba(255,215,0,0.3) 0%, rgba(255,215,0,0.6) 100%);
+  color: #7e57c2;
+  border: 1px solid rgba(255,215,0,0.5);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 8px rgba(255,215,0,0.2);
+}
+
+.premium-badge:hover {
+  background: linear-gradient(135deg, rgba(255,215,0,0.4) 0%, rgba(255,215,0,0.8) 100%);
+  transform: translateY(-1px);
+}
+
+/* Gold shimmer effect */
+@keyframes goldShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.gold-shimmer {
+  background: linear-gradient(90deg, 
+    rgba(255,215,0,0.1) 0%, 
+    rgba(255,215,0,0.4) 25%, 
+    rgba(255,215,0,0.7) 50%, 
+    rgba(255,215,0,0.4) 75%, 
+    rgba(255,215,0,0.1) 100%);
+  background-size: 200% 100%;
+  animation: goldShimmer 3s linear infinite;
+}
+
+/* Premium button */
+.premium-button {
+  background: linear-gradient(135deg, rgba(255,215,0,0.2) 0%, rgba(255,215,0,0.4) 100%);
+  color: #7e57c2;
+  border: 1px solid rgba(255,215,0,0.3);
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+}
+
+.premium-button:hover {
+  background: linear-gradient(135deg, rgba(255,215,0,0.3) 0%, rgba(255,215,0,0.5) 100%);
+  border: 1px solid rgba(255,215,0,0.5);
+  box-shadow: 0 4px 12px rgba(255,215,0,0.3);
+}
+

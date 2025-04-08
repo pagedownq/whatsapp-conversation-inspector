@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -15,7 +14,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogIn, LogOut, ArrowLeft, Upload } from 'lucide-react';
+import { LogIn, LogOut, ArrowLeft, Upload, Crown } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const Index = () => {
   const [uploadMode, setUploadMode] = useState<boolean>(true);
@@ -26,7 +26,7 @@ const Index = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, subscription } = useAuth();
   
   const [hasConsent, setHasConsent] = useState<boolean>(false);
   const [showConsentDialog, setShowConsentDialog] = useState<boolean>(true);
@@ -221,14 +221,25 @@ const Index = () => {
                   <div className="text-sm text-muted-foreground">
                     {user.email}
                   </div>
+                  {subscription?.isActive && (
+                    <Badge 
+                      className="bg-gradient-to-r from-amber-200 to-amber-500/80 text-purple-800 font-medium border-amber-300 backdrop-blur-sm animate-pulse-slow"
+                    >
+                      <Crown className="h-3 w-3 mr-1 text-amber-800" /> Premium
+                    </Badge>
+                  )}
                   <Button variant="outline" size="sm" onClick={() => signOut()}>
                     <LogOut className="h-4 w-4 mr-2" />
                     Çıkış Yap
                   </Button>
                 </div>
               ) : (
-                <Button variant="outline" onClick={() => navigate('/auth')}>
-                  <LogIn className="h-4 w-4 mr-2" />
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/auth')}
+                  className="flex items-center gap-2"
+                >
+                  <LogIn className="h-4 w-4 mr-1" />
                   Giriş Yap
                 </Button>
               )}

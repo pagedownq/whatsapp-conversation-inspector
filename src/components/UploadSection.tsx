@@ -1,12 +1,14 @@
-
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Upload, X, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Smartphone, Archive, MessageCircle } from 'lucide-react';
+import { FileText, Upload, X, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Smartphone, Archive, MessageCircle, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 import JSZip from 'jszip';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface UploadSectionProps {
   onFileProcessed: (content: string) => void;
@@ -18,6 +20,8 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user, subscription } = useAuth();
+  const navigate = useNavigate();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -66,16 +70,13 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
     
     try {
       if (selectedFile.name.endsWith('.txt')) {
-        // If it's a direct text file, read it
         const content = await readTextFile(selectedFile);
         onFileProcessed(content);
         toast.success("Dosya başarıyla işlendi");
       } else if (selectedFile.name.endsWith('.zip')) {
-        // If it's a zip, extract and find txt file
         const zip = new JSZip();
         const zipContent = await zip.loadAsync(selectedFile);
         
-        // Find all text files in the zip
         const textFiles = Object.keys(zipContent.files).filter(filename => 
           filename.endsWith('.txt') && !zipContent.files[filename].dir
         );
@@ -84,11 +85,9 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
           throw new Error("Zip dosyasında WhatsApp sohbet metni bulunamadı");
         }
         
-        // Use the first text file (usually there's only one)
         const textFile = textFiles[0];
         const content = await zipContent.files[textFile].async('string');
         
-        // Some encoding fixes for Turkish characters if needed
         const processedContent = content
           .replace(/Ã¼/g, 'ü')
           .replace(/Ã§/g, 'ç')
@@ -323,7 +322,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
                 Sohbetinizin .zip veya .txt dosyasını sürükleyip bırakın veya bilgisayarınızdan seçin
               </p>
               
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   className="rounded-full shadow-soft hover:shadow-lg btn-transition"
                   onClick={handleButtonClick}
@@ -331,6 +330,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
                   <Upload className="mr-1 h-4 w-4" />
                   Dosya Seç
                 </Button>
+
                 <Button
                   variant="outline"
                   className="rounded-full hover:bg-secondary btn-transition"
@@ -338,6 +338,33 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFileProcessed }) => {
                 >
                   {showGuide ? 'Kılavuzu Gizle' : 'Nasıl Yapılır?'}
                 </Button>
+
+                <div className="flex items-center justify-center mt-3 sm:mt-0">
+                  {!user ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate('/auth')}
+                      className="rounded-full"
+                    >
+                      Giriş Yap
+                    </Button>
+                  ) : subscription?.isActive ? (
+                    <Badge 
+                      className="bg-gradient-to-r from-amber-200 to-amber-500/80 text-purple-800 font-medium border-amber-300 backdrop-blur-sm animate-pulse-slow px-3 py-1.5"
+                    >
+                      <Crown className="h-3 w-3 mr-1 text-amber-800" /> Premium
+                    </Badge>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate('/premium')}
+                      className="rounded-full bg-gradient-to-r from-amber-200/20 to-amber-500/20 text-purple-800 border-amber-300/50 hover:bg-amber-200/30 hover:text-purple-900"
+                    >
+                      <Crown className="h-4 w-4 mr-1 text-amber-500" />
+                      Premium Özellikler
+                    </Button>
+                  )}
+                </div>
               </div>
               
               <p className="mt-4 text-xs text-muted-foreground">

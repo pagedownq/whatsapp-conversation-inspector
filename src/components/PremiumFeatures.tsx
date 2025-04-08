@@ -67,10 +67,10 @@ const PremiumFeatures = () => {
               </div>)}
           </div>
 
-          <div className="text-center my-3">
+          <div className="text-center my-0">
             <span className="text-xl font-bold text-purple-800">₺49,99</span>
             <span className="text-muted-foreground text-sm"> /ay</span>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 my-0">
               İstediğiniz zaman iptal edebilirsiniz.
             </p>
           </div>

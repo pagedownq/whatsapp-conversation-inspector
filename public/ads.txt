@@ -1,2 +1,2 @@
 
-google.com, pub-3777090766109762, DIRECT, f08c47fec0942fa0
+# Ad serving has been disabled

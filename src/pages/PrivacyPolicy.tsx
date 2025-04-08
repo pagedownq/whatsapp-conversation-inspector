@@ -1,8 +1,8 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import Header from '@/components/Header';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import AdSenseAd from '@/components/AdSenseAd';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -28,11 +28,6 @@ const PrivacyPolicy = () => {
       
       <main className="container mx-auto max-w-4xl py-8 pb-16">
         <h1 className="text-3xl font-bold mb-6">Gizlilik Politikası</h1>
-        
-        {/* Üst Reklam */}
-        <div className="my-6">
-          <AdSenseAd isInArticle={true} />
-        </div>
         
         <ScrollArea className="h-[calc(100vh-300px)]">
           <div className="space-y-6 pr-4">
@@ -65,15 +60,7 @@ const PrivacyPolicy = () => {
               </p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
                 <li>Temel işlevsellik için gerekli çerezler (örn: kullanıcı tercihlerini hatırlamak)</li>
-                <li>Google AdSense tarafından kullanılan reklamcılık çerezleri</li>
               </ul>
-              <p className="mt-2">
-                Google AdSense, size gösterilen reklamları kişiselleştirmek için çerezleri kullanabilir. Bu çerezler, Google ve üçüncü taraf reklam 
-                sağlayıcıları tarafından yerleştirilir. Google'ın reklam çerezlerini nasıl kullandığı hakkında daha fazla bilgi için 
-                <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                  Google'ın Reklam Politikalarını
-                </a> inceleyebilirsiniz.
-              </p>
             </section>
             
             <section>
@@ -87,22 +74,10 @@ const PrivacyPolicy = () => {
             <section>
               <h2 className="text-2xl font-semibold mb-3">Üçüncü Taraf Hizmetleri</h2>
               <p>
-                Sitemiz, Google AdSense gibi üçüncü taraf hizmetleri kullanmaktadır. Bu hizmetler kendi çerezlerini kullanabilir ve kendi gizlilik 
-                politikalarına sahiptir. Kullanıcılar, bu üçüncü taraf hizmetlerin gizlilik uygulamaları hakkında bilgi almak için ilgili gizlilik 
+                Sitemiz, kendi gizlilik politikalarına sahip üçüncü taraf hizmetleri kullanabilir. Kullanıcılar, 
+                bu üçüncü taraf hizmetlerin gizlilik uygulamaları hakkında bilgi almak için ilgili gizlilik 
                 politikalarını incelemelidir.
               </p>
-              <ul className="list-disc pl-6 mt-2 space-y-1">
-                <li>
-                  <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                    Google Gizlilik Politikası
-                  </a>
-                </li>
-                <li>
-                  <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                    Google AdSense Politikası
-                  </a>
-                </li>
-              </ul>
             </section>
             
             <section>
@@ -147,11 +122,6 @@ const PrivacyPolicy = () => {
             </section>
           </div>
         </ScrollArea>
-        
-        {/* Alt Reklam */}
-        <div className="mt-8">
-          <AdSenseAd isInArticle={true} />
-        </div>
       </main>
       
       <footer className="py-6 border-t">

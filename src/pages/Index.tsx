@@ -2,13 +2,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
 import Header from '@/components/Header';
 import EmptyState from '@/components/EmptyState';
 import UploadSection from '@/components/UploadSection';
 import AnalysisDisplay from '@/components/AnalysisDisplay';
 import ConsentDialog from '@/components/ConsentDialog';
-import AdSenseAd from '@/components/AdSenseAd';
 import CookieConsent from '@/components/CookieConsent';
 import Footer from '@/components/Footer';
 import { parseChat, ChatMessage } from '@/utils/parseChat';
@@ -16,9 +14,6 @@ import { analyzeChat, ChatStats } from '@/utils/analyzeChat';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import SentimentAnalysisSection from '@/components/SentimentAnalysisSection';
-import RelationshipAnalysisSection from '@/components/RelationshipAnalysisSection';
-import SubscriptionCheck from '@/components/SubscriptionCheck';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogIn, LogOut, ArrowLeft, Upload } from 'lucide-react';
 
@@ -151,10 +146,6 @@ const Index = () => {
               >
                 <EmptyState onUploadClick={handleUploadClick} />
               </motion.div>
-              
-              <div className="mt-8 mb-4 w-full">
-                <AdSenseAd className="mx-auto" isInArticle={true} />
-              </div>
             </div>
           ) : (
             <motion.div
@@ -196,20 +187,12 @@ const Index = () => {
           </div>
         </div>
         
-        <div className="mb-6 w-full">
-          <AdSenseAd className="mx-auto" isInArticle={true} />
-        </div>
-        
         {analysisStats && (
           <AnalysisDisplay 
             chatData={parsedMessages}
             onReset={handleReset}
           />
         )}
-        
-        <div className="mt-8 w-full">
-          <AdSenseAd className="mx-auto" isInArticle={true} />
-        </div>
       </>
     );
   };
@@ -228,31 +211,29 @@ const Index = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="container mx-auto py-4 flex justify-between items-center">
-            <div></div> {/* Empty div for flex spacing */}
-            <div className="flex items-center gap-2">
+          <Header />
+          
+          <main className="container mx-auto max-w-7xl flex-1 pb-16 overflow-hidden">
+            {/* User info and auth buttons in a more central location */}
+            <div className="flex justify-center items-center my-6">
               {user ? (
-                <>
-                  <div className="hidden sm:block text-sm text-muted-foreground mr-2">
+                <div className="flex items-center gap-3 p-3 bg-card rounded-lg shadow-sm border">
+                  <div className="text-sm text-muted-foreground">
                     {user.email}
                   </div>
                   <Button variant="outline" size="sm" onClick={() => signOut()}>
                     <LogOut className="h-4 w-4 mr-2" />
                     Çıkış Yap
                   </Button>
-                </>
+                </div>
               ) : (
-                <Button variant="outline" size="sm" onClick={() => navigate('/auth')}>
+                <Button variant="outline" onClick={() => navigate('/auth')}>
                   <LogIn className="h-4 w-4 mr-2" />
                   Giriş Yap
                 </Button>
               )}
             </div>
-          </div>
-          
-          <Header />
-          
-          <main className="container mx-auto max-w-7xl flex-1 pb-16 overflow-hidden">
+            
             {renderContent()}
           </main>
           

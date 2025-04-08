@@ -4,14 +4,13 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 import { useCountAnimation, useProgressAnimation } from '@/hooks/useAnimation';
 import { ChatMessage } from '@/utils/parseChat';
 import { analyzeChat, ChatStats, ParticipantStats } from '@/utils/analyzeChat';
-import { Clock, MessageSquare, Type, Smile, User, Calendar, Activity, BarChart2, Image, Video, FileText, Link, StickerIcon, Film, Mic, AlignJustify, HeartIcon, BrainIcon, ThumbsDownIcon, Brain, Heart, ChevronsRight, MessageCircle, MessagesSquare, Download } from 'lucide-react';
+import { Clock, MessageSquare, Type, Smile, User, Calendar, Activity, BarChart2, Image, Video, FileText, Link, StickerIcon, Film, Mic, AlignJustify, HeartIcon, BrainIcon, ThumbsDownIcon, Brain, Heart, ChevronsRight, MessageCircle, MessagesSquare } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getSentimentColor, getManipulationLevel, getManipulationTypeLabel } from '@/utils/sentimentAnalysis';
 import WordAnalysisSection from './WordAnalysisSection';
 import SentimentAnalysisSection from './SentimentAnalysisSection';
 import RelationshipAnalysisSection from './RelationshipAnalysisSection';
 import { Button } from '@/components/ui/button';
-import { exportAnalysisToCSV, downloadCSV } from '@/utils/exportAnalysis';
 
 interface AnalysisDisplayProps {
   chatData: ChatMessage[];
@@ -30,16 +29,16 @@ const StatsCard: React.FC<StatsCardProps> = ({ icon, title, value, suffix = '' }
   
   return (
     <motion.div 
-      className="bg-card rounded-2xl p-5 shadow-soft"
-      whileHover={{ y: -3, transition: { duration: 0.2 } }}
+      className="bg-card/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-border/50"
+      whileHover={{ y: -3, scale: 1.02, transition: { duration: 0.2 } }}
     >
-      <div className="flex items-center mb-1">
-        <div className="bg-primary/10 p-1.5 rounded-full mr-2">
-          {icon}
+      <div className="flex items-center mb-3">
+        <div className="bg-gradient-to-br from-primary/20 to-primary/10 p-2.5 rounded-xl mr-3">
+          {React.cloneElement(icon as React.ReactElement, { className: 'h-6 w-6 text-primary' })}
         </div>
-        <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+        <h3 className="text-base font-medium text-foreground">{title}</h3>
       </div>
-      <p className="text-2xl font-display font-semibold tracking-tight">
+      <p className="text-3xl font-display font-bold tracking-tight text-primary">
         {new Intl.NumberFormat('tr-TR').format(animatedValue)}{suffix}
       </p>
     </motion.div>
@@ -53,13 +52,16 @@ const MediaStatsCard: React.FC<{
   color: string;
 }> = ({ title, icon, value, color }) => {
   return (
-    <div className="bg-secondary/50 rounded-xl p-4 flex flex-col items-center">
-      <div className="rounded-full p-2 mb-2" style={{ backgroundColor: `${color}20` }}>
-        <div style={{ color }}>{icon}</div>
+    <motion.div 
+      className="bg-card/90 backdrop-blur-sm rounded-2xl p-6 flex flex-col items-center shadow-lg hover:shadow-xl transition-all duration-300 border border-border/50"
+      whileHover={{ y: -3, scale: 1.02 }}
+    >
+      <div className="rounded-xl p-3 mb-3" style={{ backgroundColor: `${color}15` }}>
+        {React.cloneElement(icon as React.ReactElement, { className: 'h-7 w-7', style: { color } })}
       </div>
-      <div className="text-lg font-medium">{value}</div>
-      <div className="text-xs text-muted-foreground">{title}</div>
-    </div>
+      <div className="text-2xl font-bold mb-1" style={{ color }}>{value}</div>
+      <div className="text-sm font-medium text-gray-600">{title}</div>
+    </motion.div>
   );
 };
 
@@ -96,7 +98,7 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
     }
   }, [chatData, selectedParticipant]);
   
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A259FF'];
+  const COLORS = ['#6366F1', '#22C55E', '#F59E0B', '#EC4899', '#8B5CF6', '#10B981', '#F43F5E', '#3B82F6'];
   
   if (!stats) {
     return (
@@ -192,18 +194,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="flex justify-end mb-4">
-        <Button
-          onClick={() => {
-            const exportData = exportAnalysisToCSV(stats);
-            downloadCSV(exportData);
-          }}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
-        >
-          <Download className="h-4 w-4" />
-          Analizi İndir (CSV)
-        </Button>
-      </div>
       {isMobile && (
         <div className="flex items-center justify-center gap-2 mb-4 p-2 bg-secondary/50 rounded-lg text-sm">
           <ChevronsRight className="h-4 w-4 animate-pulse" />
@@ -211,77 +201,29 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
         </div>
       )}
       
-      <div className="flex overflow-x-auto mb-8 p-1 -mx-1 gap-2 pb-3 scrollbar-none">
-        <button
-          onClick={() => setSelectedTab('overview')}
-          className={`px-4 py-2 rounded-full whitespace-nowrap ${
-            selectedTab === 'overview' 
-              ? 'bg-primary text-primary-foreground shadow-soft' 
-              : 'bg-secondary hover:bg-secondary/80'
-          } btn-transition`}
-        >
-          Genel Bakış
-        </button>
-        <button
-          onClick={() => setSelectedTab('participants')}
-          className={`px-4 py-2 rounded-full whitespace-nowrap ${
-            selectedTab === 'participants' 
-              ? 'bg-primary text-primary-foreground shadow-soft' 
-              : 'bg-secondary hover:bg-secondary/80'
-          } btn-transition`}
-        >
-          Katılımcı Analizi
-        </button>
-        <button
-          onClick={() => setSelectedTab('timeline')}
-          className={`px-4 py-2 rounded-full whitespace-nowrap ${
-            selectedTab === 'timeline' 
-              ? 'bg-primary text-primary-foreground shadow-soft' 
-              : 'bg-secondary hover:bg-secondary/80'
-          } btn-transition`}
-        >
-          Zaman Çizelgesi
-        </button>
-        <button
-          onClick={() => setSelectedTab('media')}
-          className={`px-4 py-2 rounded-full whitespace-nowrap ${
-            selectedTab === 'media' 
-              ? 'bg-primary text-primary-foreground shadow-soft' 
-              : 'bg-secondary hover:bg-secondary/80'
-          } btn-transition`}
-        >
-          Medya Analizi
-        </button>
-        <button
-          onClick={() => setSelectedTab('conversation')}
-          className={`px-4 py-2 rounded-full whitespace-nowrap ${
-            selectedTab === 'conversation' 
-              ? 'bg-primary text-primary-foreground shadow-soft' 
-              : 'bg-secondary hover:bg-secondary/80'
-          } btn-transition`}
-        >
-          Konuşma Analizi
-        </button>
-        <button
-          onClick={() => setSelectedTab('sentiment')}
-          className={`px-4 py-2 rounded-full whitespace-nowrap ${
-            selectedTab === 'sentiment' 
-              ? 'bg-primary text-primary-foreground shadow-soft' 
-              : 'bg-secondary hover:bg-secondary/80'
-          } btn-transition`}
-        >
-          Duygu & Manipülasyon
-        </button>
-        <button
-          onClick={() => setSelectedTab('relationship')}
-          className={`px-4 py-2 rounded-full whitespace-nowrap ${
-            selectedTab === 'relationship' 
-              ? 'bg-primary text-primary-foreground shadow-soft' 
-              : 'bg-secondary hover:bg-secondary/80'
-          } btn-transition`}
-        >
-          İlişki Analizi
-        </button>
+      <div className="flex flex-wrap gap-2 mb-6">
+        {[
+          { id: 'overview', icon: <BarChart2 className="h-4 w-4" />, label: 'Genel' },
+          { id: 'participants', icon: <User className="h-4 w-4" />, label: 'Kişiler' },
+          { id: 'timeline', icon: <Activity className="h-4 w-4" />, label: 'Zaman' },
+          { id: 'media', icon: <Image className="h-4 w-4" />, label: 'Medya' },
+          { id: 'conversation', icon: <MessagesSquare className="h-4 w-4" />, label: 'Konuşma' },
+          { id: 'sentiment', icon: <Brain className="h-4 w-4" />, label: 'Duygu' },
+          { id: 'relationship', icon: <Heart className="h-4 w-4" />, label: 'İlişki' }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setSelectedTab(tab.id)}
+            className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all text-sm ${
+              selectedTab === tab.id
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'bg-secondary/50 hover:bg-secondary/70'
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
       </div>
       
       <AnimatePresence mode="wait">

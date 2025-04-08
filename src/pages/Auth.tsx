@@ -26,7 +26,7 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Loader2, Mail, Lock, User } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const loginSchema = z.object({
@@ -170,6 +170,15 @@ const Auth = () => {
         }}
         className="w-full max-w-md"
       >
+        <Button
+          variant="ghost"
+          className="mb-4"
+          onClick={() => navigate('/')}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Geri Dön
+        </Button>
+
         <Card className="shadow-lg border-t-4 border-t-primary overflow-hidden backdrop-blur-sm bg-background/95">
           <CardHeader className="space-y-1">
             <motion.div

@@ -28,7 +28,7 @@ interface SentimentAnalysisSectionProps {
   participantColors: Record<string, string>;
 }
 
-const SENTIMENT_COLORS = ['#66BB6A', '#BDBDBD', '#EF5350'];
+const SENTIMENT_COLORS = ['#22C55E', '#94A3B8', '#EF4444'];
 
 const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
   sentiment,
@@ -91,19 +91,19 @@ const SentimentAnalysisSection: React.FC<SentimentAnalysisSectionProps> = ({
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="bg-secondary/50 rounded-lg p-4 flex flex-col items-center">
-                    <div className="text-2xl font-semibold text-green-500">%{formattedPositivePercentage}</div>
-                    <div className="text-sm text-muted-foreground">Pozitif</div>
+                  <div className="bg-gradient-to-br from-green-100/50 to-green-50/30 backdrop-blur-sm rounded-lg p-4 flex flex-col items-center border border-green-200/30">
+                    <div className="text-2xl font-semibold text-green-600">%{formattedPositivePercentage}</div>
+                    <div className="text-sm text-green-700/70">Pozitif</div>
                   </div>
                   
-                  <div className="bg-secondary/50 rounded-lg p-4 flex flex-col items-center">
-                    <div className="text-2xl font-semibold">%{formattedNeutralPercentage}</div>
-                    <div className="text-sm text-muted-foreground">Nötr</div>
+                  <div className="bg-gradient-to-br from-slate-100/50 to-slate-50/30 backdrop-blur-sm rounded-lg p-4 flex flex-col items-center border border-slate-200/30">
+                    <div className="text-2xl font-semibold text-slate-600">%{formattedNeutralPercentage}</div>
+                    <div className="text-sm text-slate-600/70">Nötr</div>
                   </div>
                   
-                  <div className="bg-secondary/50 rounded-lg p-4 flex flex-col items-center">
-                    <div className="text-2xl font-semibold text-red-500">%{formattedNegativePercentage}</div>
-                    <div className="text-sm text-muted-foreground">Negatif</div>
+                  <div className="bg-gradient-to-br from-red-100/50 to-red-50/30 backdrop-blur-sm rounded-lg p-4 flex flex-col items-center border border-red-200/30">
+                    <div className="text-2xl font-semibold text-red-600">%{formattedNegativePercentage}</div>
+                    <div className="text-sm text-red-700/70">Negatif</div>
                   </div>
                 </div>
               </CardContent>

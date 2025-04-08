@@ -43,19 +43,19 @@ const ConversationPatternCard = ({
   value?: string;
   color?: string;
 }) => (
-  <Card className="shadow-soft h-full">
+  <Card className="shadow-soft h-full bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 backdrop-blur-sm border border-primary/20 hover:shadow-xl hover:border-primary/30 transition-all duration-300">
     <CardHeader className="pb-2">
-      <CardTitle className="text-lg font-medium">{title}</CardTitle>
-      <CardDescription>{description}</CardDescription>
+      <CardTitle className="text-lg font-medium bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">{title}</CardTitle>
+      <CardDescription className="text-muted-foreground/90">{description}</CardDescription>
     </CardHeader>
     <CardContent>
-      <div className="flex items-center gap-2">
-        <div className={`p-2 rounded-full ${color ? color : 'bg-primary/10'}`}>
+      <div className="flex items-center gap-3">
+        <div className={`p-3 rounded-xl ${color ? `bg-gradient-to-br ${color} shadow-lg shadow-${color}/20` : 'bg-gradient-to-br from-primary/20 to-primary/10 shadow-lg shadow-primary/20'}`}>
           {icon}
         </div>
         <div>
-          <div className="text-xl font-bold">{person}</div>
-          {value && <div className="text-muted-foreground text-sm">{value}</div>}
+          <div className="text-xl font-bold bg-gradient-to-r from-primary/90 to-primary/70 bg-clip-text text-transparent">{person}</div>
+          {value && <div className="text-sm text-muted-foreground/80 mt-0.5">{value}</div>}
         </div>
       </div>
     </CardContent>
@@ -90,7 +90,7 @@ const WordAnalysisSection: React.FC<WordAnalysisProps> = ({
           return (
             <motion.span
               key={index}
-              className="px-2 py-1 rounded-md bg-secondary/60"
+              className="px-2 py-1 rounded-md bg-gradient-to-br from-primary/20 to-primary/10 backdrop-blur-sm border border-primary/20 hover:border-primary/40 transition-colors"
               style={{ 
                 fontSize: `${size}px`, 
                 opacity, 
@@ -193,9 +193,9 @@ const WordAnalysisSection: React.FC<WordAnalysisProps> = ({
         </TabsList>
 
         <TabsContent value="words" className="mt-4 space-y-6">
-          <Card className="shadow-soft">
+          <Card className="shadow-soft bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-sm border border-border/50">
             <CardHeader>
-              <CardTitle>Kelime Bulutu</CardTitle>
+              <CardTitle className="text-primary">Kelime Bulutu</CardTitle>
               <CardDescription>
                 Sohbette en sık kullanılan kelimeler
               </CardDescription>

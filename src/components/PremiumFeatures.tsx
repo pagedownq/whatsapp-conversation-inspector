@@ -45,7 +45,7 @@ const PremiumFeatures = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 gap-4 my-[2px] mx-0 py-0 px-0">
+          <div className="grid grid-cols-1 gap-4 mx-0 py-0 px-0 my-0">
             {[{
             title: "Duygu Analizi",
             desc: "Sohbetinizdeki duygu değişimlerini görselleştirin ve duygusal eğilimleri tespit edin."
@@ -58,7 +58,7 @@ const PremiumFeatures = () => {
           }, {
             title: "Gelişmiş Raporlama",
             desc: "Detaylı ve indirilebilir raporlar ile sohbet analizinizin derinlemesine incelemesine erişin."
-          }].map((feature, index) => <div key={index} className="border rounded-lg p-4 border-amber-200/50 bg-white/80 backdrop-blur-sm hover:shadow-md transition-all">
+          }].map((feature, index) => <div key={index} className="border rounded-lg p-4 border-amber-200/50 bg-white/80 backdrop-blur-sm hover:shadow-md transition-all px-[4px] py-0">
                 <h3 className="font-medium mb-2 text-purple-800 flex items-center gap-2 text-base">
                   <Badge className="bg-amber-200 text-purple-800">Premium</Badge>
                   {feature.title}

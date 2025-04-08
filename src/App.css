@@ -57,9 +57,15 @@
   animation: pulse 3s ease-in-out infinite;
 }
 
-/* Better card hover effects */
+/* Enhanced button hover effects */
+.btn-transition {
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  overflow: hidden;
+}
+
 .card-hover-effect {
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .card-hover-effect:hover {
@@ -73,4 +79,31 @@
   -webkit-background-clip: text;
   color: transparent;
   background-image: linear-gradient(to right, hsl(var(--primary)), hsl(var(--secondary)));
+}
+
+/* Form animations */
+@keyframes formSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-animation {
+  animation: formSlideIn 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Input focus effects */
+input:focus, textarea:focus, select:focus {
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 0 0 3px hsla(var(--primary), 0.2);
+}
+
+/* Button hover animation */
+.button-hover-effect:hover {
+  transform: translateY(-2px);
 }

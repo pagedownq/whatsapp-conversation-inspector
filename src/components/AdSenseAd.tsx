@@ -1,7 +1,7 @@
+
 import React from 'react';
 
-// This component is no longer in use, but we're keeping it in the codebase
-// in case we need to add advertising back in the future
+// This component is no longer in use - all ad spaces have been removed
 const AdSenseAd: React.FC<{
   className?: string;
   style?: React.CSSProperties;

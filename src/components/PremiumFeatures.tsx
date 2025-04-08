@@ -1,9 +1,24 @@
-// ...imports aynı şekilde
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Crown, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const PremiumFeatures = () => {
   const [showDialog, setShowDialog] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+
   const handleLoginClick = () => {
     navigate('/auth');
   };
@@ -29,7 +44,7 @@ const PremiumFeatures = () => {
       </div>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="bg-gradient-to-b from-white to-amber-50 border border-amber-200/50 max-w-[95vw] sm:max-w-2xl">
+        <DialogContent className="bg-gradient-to-b from-white to-amber-50 border border-amber-200/50 max-w-[95vw] sm:max-w-2xl w-full">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-center gap-2 text-purple-800 text-lg sm:text-xl">
               <Crown className="h-6 w-6 text-amber-500" />
@@ -58,16 +73,16 @@ const PremiumFeatures = () => {
                 title: "Gelişmiş Raporlama",
                 desc: "Detaylı ve indirilebilir raporlar ile sohbet analizinizin derinlemesine incelemesine erişin.",
               },
-            ].map(({ title, desc }) => (
+            ].map((feature, index) => (
               <div
-                key={title}
+                key={index}
                 className="border rounded-lg p-4 border-amber-200/50 bg-white/80 backdrop-blur-sm hover:shadow-md transition-all"
               >
                 <h3 className="font-medium mb-2 text-purple-800 flex items-center gap-2 text-base">
-                  <Badge variant="premium">Premium</Badge>
-                  {title}
+                  <Badge className="bg-amber-200 text-purple-800">Premium</Badge>
+                  {feature.title}
                 </h3>
-                <p className="text-sm text-muted-foreground">{desc}</p>
+                <p className="text-sm text-muted-foreground">{feature.desc}</p>
               </div>
             ))}
           </div>

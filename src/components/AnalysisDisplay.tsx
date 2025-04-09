@@ -99,7 +99,7 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
     }
   }, [chatData, selectedParticipant]);
   
-  const COLORS = ['#6366F1', '#22C55E', '#F59E0B', '#EC4899', '#8B5CF6', '#10B981', '#F43F5E', '#3B82F6'];
+  const COLORS = ['#4F46E5', '#16A34A', '#EA580C', '#DB2777', '#7C3AED', '#059669', '#E11D48', '#2563EB'];
   
   if (!stats) {
     return (
@@ -139,13 +139,13 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
   }));
   
   const mediaData = [
-    { name: 'Fotoğraflar', value: stats.mediaStats.images, icon: <Image className="h-5 w-5" />, color: '#4CAF50' },
-    { name: 'Videolar', value: stats.mediaStats.videos, icon: <Video className="h-5 w-5" />, color: '#FFC107' },
-    { name: 'Belgeler', value: stats.mediaStats.documents, icon: <FileText className="h-5 w-5" />, color: '#2196F3' },
-    { name: 'Linkler', value: stats.mediaStats.links, icon: <Link className="h-5 w-5" />, color: '#9C27B0' },
-    { name: 'Çıkartmalar', value: stats.mediaStats.stickers, icon: <StickerIcon className="h-5 w-5" />, color: '#FF5722' },
-    { name: 'GIFler', value: stats.mediaStats.gifs, icon: <Film className="h-5 w-5" />, color: '#795548' },
-    { name: 'Sesler', value: stats.mediaStats.audio, icon: <Mic className="h-5 w-5" />, color: '#607D8B' }
+    { name: 'Fotoğraflar', value: stats.mediaStats.images, icon: <Image className="h-5 w-5" />, color: '#22C55E' },
+    { name: 'Videolar', value: stats.mediaStats.videos, icon: <Video className="h-5 w-5" />, color: '#F59E0B' },
+    { name: 'Belgeler', value: stats.mediaStats.documents, icon: <FileText className="h-5 w-5" />, color: '#3B82F6' },
+    { name: 'Linkler', value: stats.mediaStats.links, icon: <Link className="h-5 w-5" />, color: '#8B5CF6' },
+    { name: 'Çıkartmalar', value: stats.mediaStats.stickers, icon: <StickerIcon className="h-5 w-5" />, color: '#F43F5E' },
+    { name: 'GIFler', value: stats.mediaStats.gifs, icon: <Film className="h-5 w-5" />, color: '#6366F1' },
+    { name: 'Sesler', value: stats.mediaStats.audio, icon: <Mic className="h-5 w-5" />, color: '#10B981' }
   ];
   
   const getParticipantMediaData = (participant: string) => [
@@ -203,12 +203,14 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
       )}
       
       <div className="flex flex-wrap gap-2 mb-6">
+
+
         {[
-          { id: 'overview', icon: <BarChart2 className="h-4 w-4" />, label: 'Genel' },
-          { id: 'participants', icon: <User className="h-4 w-4" />, label: 'Kişiler' },
-          { id: 'timeline', icon: <Activity className="h-4 w-4" />, label: 'Zaman' },
-          { id: 'media', icon: <Image className="h-4 w-4" />, label: 'Medya' },
-          { id: 'conversation', icon: <MessagesSquare className="h-4 w-4" />, label: 'Konuşma' },
+          { id: 'overview', icon: <BarChart2 className="h-4 w-4" />, label: 'Genel', color: 'from-blue-500/20 to-indigo-600/20' },
+          { id: 'participants', icon: <User className="h-4 w-4" />, label: 'Kişiler', color: 'from-emerald-500/20 to-teal-600/20' },
+          { id: 'timeline', icon: <Activity className="h-4 w-4" />, label: 'Zaman', color: 'from-amber-500/20 to-orange-600/20' },
+          { id: 'media', icon: <Image className="h-4 w-4" />, label: 'Medya', color: 'from-rose-500/20 to-pink-600/20' },
+          { id: 'conversation', icon: <MessagesSquare className="h-4 w-4" />, label: 'Konuşma', color: 'from-cyan-500/20 to-sky-600/20' },
           { id: 'sentiment', icon: <Brain className="h-4 w-4" />, label: 'Duygu', color: 'from-purple-500/20 to-purple-600/20' },
           { id: 'relationship', icon: <Heart className="h-4 w-4" />, label: 'İlişki', color: 'from-pink-500/20 to-pink-600/20' },
           { id: 'whatsapp', icon: <MessageSquare className="h-4 w-4" />, label: 'WhatsApp', color: 'from-green-500/20 to-green-600/20' }
@@ -216,8 +218,8 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
           <button
             key={tab.id}
             onClick={() => setSelectedTab(tab.id)}
-            className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all text-sm ${tab.color ? `bg-gradient-to-br ${tab.color} backdrop-blur-sm border border-primary/20 hover:border-primary/30 hover:shadow-lg` : selectedTab === tab.id
-                ? 'bg-primary text-primary-foreground shadow-sm'
+            className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all text-sm ${tab.color ? `bg-gradient-to-br ${tab.color} backdrop-blur-sm border border-primary/20 hover:border-primary/30 hover:shadow-lg hover:scale-105 hover:brightness-110` : selectedTab === tab.id
+                ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
                 : 'bg-secondary/50 hover:bg-secondary/70'
             }`}
           >

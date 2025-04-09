@@ -5,6 +5,7 @@ import { useCountAnimation, useProgressAnimation } from '@/hooks/useAnimation';
 import { ChatMessage } from '@/utils/parseChat';
 import { analyzeChat, ChatStats, ParticipantStats } from '@/utils/analyzeChat';
 import { Clock, MessageSquare, Type, Smile, User, Calendar, Activity, BarChart2, Image, Video, FileText, Link, StickerIcon, Film, Mic, AlignJustify, HeartIcon, BrainIcon, ThumbsDownIcon, Brain, Heart, ChevronsRight, MessageCircle, MessagesSquare } from 'lucide-react';
+import PremiumWhatsAppView from './PremiumWhatsAppView';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getSentimentColor, getManipulationLevel, getManipulationTypeLabel } from '@/utils/sentimentAnalysis';
 import WordAnalysisSection from './WordAnalysisSection';
@@ -208,20 +209,23 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
           { id: 'timeline', icon: <Activity className="h-4 w-4" />, label: 'Zaman' },
           { id: 'media', icon: <Image className="h-4 w-4" />, label: 'Medya' },
           { id: 'conversation', icon: <MessagesSquare className="h-4 w-4" />, label: 'Konuşma' },
-          { id: 'sentiment', icon: <Brain className="h-4 w-4" />, label: 'Duygu' },
-          { id: 'relationship', icon: <Heart className="h-4 w-4" />, label: 'İlişki' }
+          { id: 'sentiment', icon: <Brain className="h-4 w-4" />, label: 'Duygu', color: 'from-purple-500/20 to-purple-600/20' },
+          { id: 'relationship', icon: <Heart className="h-4 w-4" />, label: 'İlişki', color: 'from-pink-500/20 to-pink-600/20' },
+          { id: 'whatsapp', icon: <MessageSquare className="h-4 w-4" />, label: 'WhatsApp', color: 'from-green-500/20 to-green-600/20' }
         ].map(tab => (
           <button
             key={tab.id}
             onClick={() => setSelectedTab(tab.id)}
-            className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all text-sm ${
-              selectedTab === tab.id
+            className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all text-sm ${tab.color ? `bg-gradient-to-br ${tab.color} backdrop-blur-sm border border-primary/20 hover:border-primary/30 hover:shadow-lg` : selectedTab === tab.id
                 ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'bg-secondary/50 hover:bg-secondary/70'
             }`}
           >
             {tab.icon}
             {tab.label}
+            {(tab.id === 'sentiment' || tab.id === 'relationship' || tab.id === 'whatsapp') && (
+              <span className="ml-1 text-xs font-medium text-primary/70">PRO</span>
+            )}
           </button>
         ))}
       </div>
@@ -796,6 +800,12 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
               apologies={stats.apologies}
               participantStats={stats.participantStats}
               participantColors={participantColors}
+            />
+          )}
+          {selectedTab === 'whatsapp' && (
+            <PremiumWhatsAppView
+              messages={chatData}
+              onBack={() => setSelectedTab('overview')}
             />
           )}
         </motion.div>

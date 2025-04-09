@@ -62,10 +62,12 @@ const UploadSection: React.FC<UploadSectionProps> = ({
   const processFile = async (selectedFile: File) => {
     setIsLoading(true);
     setFile(selectedFile);
+    toast.loading("WhatsApp sohbeti analiz ediliyor, bu işlem biraz zaman alabilir...");
     try {
       if (selectedFile.name.endsWith('.txt')) {
         const content = await readTextFile(selectedFile);
         onFileProcessed(content);
+        toast.dismiss();
         toast.success("Dosya başarıyla işlendi");
       } else if (selectedFile.name.endsWith('.zip')) {
         const zip = new JSZip();
@@ -82,12 +84,14 @@ const UploadSection: React.FC<UploadSectionProps> = ({
           throw new Error("Zip içindeki dosya boş veya okunamadı");
         }
         onFileProcessed(processedContent);
+        toast.dismiss();
         toast.success("WhatsApp sohbeti başarıyla işlendi");
       } else {
         throw new Error("Desteklenmeyen dosya formatı");
       }
     } catch (error) {
       console.error("File processing error:", error);
+      toast.dismiss();
       toast.error(error instanceof Error ? error.message : "Dosya işlenirken bir hata oluştu");
       setFile(null);
     } finally {

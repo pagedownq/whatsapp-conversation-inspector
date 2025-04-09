@@ -1,12 +1,10 @@
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { ChatMessage } from '@/utils/parseChat';
-import { MessageSquare, Paperclip, Smile, Mic, ChevronLeft, MoreVertical, Phone, Video, Search } from 'lucide-react';
-import { getSentimentColor } from '@/utils/sentimentAnalysis';
-import { analyzeSentiment, detectManipulation } from '@/utils/sentimentAnalysis';
+import { Paperclip, ChevronLeft } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface WhatsAppViewProps {
@@ -18,13 +16,17 @@ const WhatsAppView: React.FC<WhatsAppViewProps> = ({ messages, onBack }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   
+ 
   const sortedMessages = useMemo(() => {
-    return [...messages].sort((a, b) => {
-      const dateA = new Date(formatDateTimeForParsing(a.date, a.time));
-      const dateB = new Date(formatDateTimeForParsing(b.date, b.time));
-      return dateA.getTime() - dateB.getTime();
-    });
+    return [...messages]
+      .sort((a, b) => {
+        const dateA = new Date(formatDateTimeForParsing(a.date, a.time));
+        const dateB = new Date(formatDateTimeForParsing(b.date, b.time));
+        return dateA.getTime() - dateB.getTime();
+      })
+      .slice(-1500); // Son 500 mesajı al
   }, [messages]);
+  
   
   const participants = useMemo(() => {
     return Array.from(new Set(messages.map(msg => msg.sender)));
@@ -93,29 +95,9 @@ const WhatsAppView: React.FC<WhatsAppViewProps> = ({ messages, onBack }) => {
     return messages[currentIndex].sender === messages[currentIndex - 1].sender;
   };
   
-  const getMessageStyle = (sender: string, isMedia: boolean, content: string) => {
-    let bgColor = participants.indexOf(sender) === 0 ? 'bg-green-100' : 'bg-blue-100';
-    let textColor = 'text-gray-800';
-    
-    if (isMedia) {
-      bgColor = 'bg-gray-200';
-    }
-    
-    if (!isMedia && content) {
-      const sentimentResult = analyzeSentiment(content);
-      const manipulationResult = detectManipulation(content);
-      
-      if (manipulationResult.score > 0.3) {
-        bgColor = 'bg-purple-100';
-      } else {
-        if (sentimentResult.score > 0.3) {
-          bgColor = 'bg-green-100';
-        } else if (sentimentResult.score < -0.3) {
-          bgColor = 'bg-red-100';
-        }
-      }
-    }
-    
+  const getMessageStyle = (sender: string, isMedia: boolean) => {
+    const bgColor = participants.indexOf(sender) === 0 ? 'bg-green-100/80' : 'bg-blue-100/80';
+    const textColor = 'text-gray-800';
     return { bgColor, textColor };
   };
   
@@ -161,50 +143,31 @@ const WhatsAppView: React.FC<WhatsAppViewProps> = ({ messages, onBack }) => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="bg-emerald-600 text-white p-2 flex items-center">
+      <div className="bg-emerald-600/90 backdrop-blur-sm text-white p-2 flex items-center">
         <button 
           onClick={onBack}
           className="p-1 rounded-full hover:bg-emerald-500 transition-colors mr-1"
         >
-          <ChevronLeft className="h-6 w-6" />
+          <ChevronLeft className="h-5 w-5" />
         </button>
         
         <div className="flex-1 flex items-center">
           {participants.length > 0 && (
-            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center mr-3 text-emerald-700 font-bold">
+            <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-2 text-emerald-700 font-medium text-sm">
               {participants[0].charAt(0)}
             </div>
           )}
           
           <div>
-            <h2 className="font-semibold truncate max-w-[150px] sm:max-w-[200px]">
+            <h2 className="font-medium truncate max-w-[150px] sm:max-w-[200px] text-sm">
               {participants.length === 2 
                 ? participants.filter(p => p !== participants[0])[0] 
                 : 'Grup Sohbeti'}
             </h2>
-            <p className="text-xs text-white/80">
-              {participants.length} katılımcı
+            <p className="text-xs text-white/70">
+              {participants.length} katılımcı • Son {sortedMessages.length} mesaj
             </p>
           </div>
-        </div>
-        
-        <div className="flex space-x-2 md:space-x-3">
-          {!isMobile && (
-            <>
-              <button className="p-1 rounded-full hover:bg-emerald-500 transition-colors">
-                <Video className="h-5 w-5" />
-              </button>
-              <button className="p-1 rounded-full hover:bg-emerald-500 transition-colors">
-                <Phone className="h-5 w-5" />
-              </button>
-            </>
-          )}
-          <button className="p-1 rounded-full hover:bg-emerald-500 transition-colors">
-            <Search className="h-5 w-5" />
-          </button>
-          <button className="p-1 rounded-full hover:bg-emerald-500 transition-colors">
-            <MoreVertical className="h-5 w-5" />
-          </button>
         </div>
       </div>
       
@@ -251,20 +214,7 @@ const WhatsAppView: React.FC<WhatsAppViewProps> = ({ messages, onBack }) => {
         <div ref={messagesEndRef} />
       </div>
       
-      <div className="bg-white p-3 border-t border-gray-200 flex items-center">
-        <button className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors">
-          <Smile className="h-6 w-6" />
-        </button>
-        <input 
-          type="text" 
-          className="flex-1 rounded-full bg-gray-100 p-2 px-4 mx-2 focus:outline-none"
-          placeholder="Mesaj yazın"
-          disabled
-        />
-        <button className="p-2 rounded-full bg-emerald-500 text-white">
-          <Mic className="h-6 w-6" />
-        </button>
-      </div>
+
     </motion.div>
   );
 };

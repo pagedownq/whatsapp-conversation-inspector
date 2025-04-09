@@ -17,7 +17,7 @@ const Footer = () => {
             <div className="hidden md:flex items-center gap-1 text-xs text-muted-foreground">
               <span>Made with</span> 
               <Heart className="h-3 w-3 text-red-500 fill-red-500" /> 
-              <span>in Türkiye</span>
+              <span>in MGverse</span>
             </div>
           </div>
           

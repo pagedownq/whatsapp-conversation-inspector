@@ -86,9 +86,7 @@ const Pricing = () => {
               <div className="text-center mb-6">
                 <span className="text-4xl font-bold text-purple-800">₺49,99</span>
                 <span className="text-muted-foreground"> /ay</span>
-                <p className="text-sm text-muted-foreground mt-1">
-                  İstediğiniz zaman iptal edebilirsiniz
-                </p>
+                
               </div>
 
               <div className="space-y-4">
@@ -105,9 +103,7 @@ const Pricing = () => {
                 <Crown className="h-5 w-5 mr-2" />
                 Premium Üyelik Al
               </Button>
-              <p className="text-xs text-center text-muted-foreground">
-                7 gün içinde iade garantisi. Sorularınız için destek ekibimizle iletişime geçebilirsiniz.
-              </p>
+              
             </CardFooter>
           </Card>
         </motion.div>

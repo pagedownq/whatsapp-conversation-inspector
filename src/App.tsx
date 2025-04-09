@@ -9,8 +9,12 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Rejected from "./pages/Rejected";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
+
 import Pricing from "./pages/Pricing";
+import MesafeliSatis from "./pages/MesafeliSatis";
+import KVKKAydinlatma from "./pages/KVKKAydinlatma";
+import IadePolitikasi from "./pages/IadePolitikasi";
+import GizlilikPolitikasi from "./pages/GizlilikPolitikasi";
 import "./App.css";
 
 // Create a new QueryClient instance
@@ -33,9 +37,13 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          
             <Route path="/rejected" element={<Rejected />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/mesafeli-satis" element={<MesafeliSatis />} />
+            <Route path="/kvkk-aydinlatma" element={<KVKKAydinlatma />} />
+            <Route path="/iade-politikasi" element={<IadePolitikasi />} />
+            <Route path="/gizlilik-politikasi" element={<GizlilikPolitikasi />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

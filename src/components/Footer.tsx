@@ -21,21 +21,47 @@ const Footer = () => {
             </div>
           </div>
           
-          <div className="flex items-center space-x-6">
-            <Link to="/privacy-policy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Gizlilik Politikası
-            </Link>
-            <a 
-              href="#" 
-              onClick={(e) => {
-                e.preventDefault(); 
-                localStorage.removeItem('cookie-consent');
-                window.location.reload();
-              }}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Çerez Ayarları
-            </a>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-center sm:text-left">
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold">Yasal</h3>
+              <div className="flex flex-col space-y-2">
+                <Link to="/gizlilik-politikasi" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Gizlilik Politikası
+                </Link>
+                <Link to="/kvkk-aydinlatma" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  KVKK Aydınlatma Metni
+                </Link>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold">Sözleşmeler</h3>
+              <div className="flex flex-col space-y-2">
+                <Link to="/mesafeli-satis" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Mesafeli Satış Sözleşmesi
+                </Link>
+                <Link to="/iade-politikasi" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  İade Politikası
+                </Link>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold">Tercihler</h3>
+              <div className="flex flex-col space-y-2">
+                <a 
+                  href="#" 
+                  onClick={(e) => {
+                    e.preventDefault(); 
+                    localStorage.removeItem('cookie-consent');
+                    window.location.reload();
+                  }}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Çerez Ayarları
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </div>

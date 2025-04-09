@@ -12,7 +12,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
             <p className="text-sm text-muted-foreground">
-              MGverse &copy; {currentYear} - <a href="https://analizore.netlify.app/" className="hover:underline">analizore.netlify.app</a>
+              MGverse &copy; {currentYear}
             </p>
             <div className="hidden md:flex items-center gap-1 text-xs text-muted-foreground">
               <span>Made with</span> 

@@ -42,13 +42,13 @@ const KVKKAydinlatma = () => {
 
             <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-4">2. İşlenen Kişisel Veriler</h2>
             <p className="text-gray-700 mb-4">
-              WhatsApp Conversation Inspector hizmeti kapsamında işlenen kişisel veriler:
+              Analizore hizmeti kapsamında işlenen kişisel veriler:
             </p>
             <ul className="list-disc pl-6 text-gray-700 mb-4">
-              <li>WhatsApp sohbet içerikleri</li>
+              <li>WhatsApp sohbet içerikleri (analiz için yüklenen)</li>
               <li>Kullanıcı kimlik bilgileri</li>
               <li>İletişim bilgileri</li>
-              <li>Ödeme bilgileri</li>
+              <li>Tek seferlik ödeme bilgileri</li>
             </ul>
 
             <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-4">3. Kişisel Verilerin İşlenme Amacı</h2>

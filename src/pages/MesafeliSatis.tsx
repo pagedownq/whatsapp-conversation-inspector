@@ -42,7 +42,7 @@ const MesafeliSatis = () => {
 
             <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-4">2. Sözleşmenin Konusu</h2>
             <p className="text-gray-700 mb-4">
-              İşbu sözleşmenin konusu, WhatsApp Conversation Inspector Premium hizmetinin kullanım şartları ve tarafların hak ve yükümlülüklerinin belirlenmesidir.
+              İşbu sözleşmenin konusu, Analizore Premium hizmetinin kullanım şartları ve tarafların hak ve yükümlülüklerinin belirlenmesidir.
             </p>
 
             <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-4">3. Hizmet Detayları</h2>
@@ -64,14 +64,14 @@ const MesafeliSatis = () => {
               Premium üyelik ücreti aylık 49,99 TL'dir. Ödeme, kredi kartı ile yapılır ve abonelik otomatik olarak yenilenir.
             </p>
 
-            <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-4">5. Cayma Hakkı</h2>
+            <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-4">5. Cayma Hakkı ve İade Politikası</h2>
             <p className="text-gray-700 mb-4">
-              Alıcı, satın aldığı hizmetten, 7 gün içinde herhangi bir gerekçe göstermeksizin cayma hakkına sahiptir. Cayma hakkının kullanılması durumunda ödenen ücret iade edilir.
+              Dijital ürün ve hizmet sunduğumuz için, 6502 Sayılı Tüketicinin Korunması Hakkında Kanun kapsamında cayma hakkı bulunmamaktadır. Satın alma işlemi sonrası anında erişim sağlandığından dolayı iade ve iptal talepleri kabul edilmemektedir.
             </p>
 
-            <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-4">6. Abonelik İptali</h2>
+            <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-4">6. Ödeme ve Teslimat</h2>
             <p className="text-gray-700 mb-4">
-              Premium üyelik, hesap ayarlarından veya müşteri hizmetleri ile iletişime geçilerek istenilen zaman iptal edilebilir. İptal işlemi, mevcut abonelik döneminin sonunda gerçekleşir.
+              Ödeme işlemi tamamlandıktan sonra dijital hizmetimize anında erişim sağlanmaktadır. Dijital ürün olması sebebiyle abonelik iptali ve para iadesi yapılmamaktadır.
             </p>
 
             <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-4">7. Hizmet Kalitesi</h2>

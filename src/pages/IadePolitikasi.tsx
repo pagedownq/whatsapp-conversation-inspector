@@ -29,65 +29,49 @@ const IadePolitikasi = () => {
           
           <div className="prose prose-purple max-w-none">
             <p className="text-gray-700 mb-4">
-              Whatsapp Analiz olarak, kullanıcılarımıza şeffaf ve adil bir iade ve iptal politikası sunmayı taahhüt ediyoruz. Dijital hizmet sunduğumuz için, 6502 Sayılı Tüketicinin Korunması Hakkında Kanun kapsamında cayma hakkı bulunmamaktadır.
+              Analizore olarak, kullanıcılarımıza şeffaf ve adil bir iade ve iptal politikası sunmayı taahhüt ediyoruz. Dijital hizmet sunduğumuz için, 6502 Sayılı Tüketicinin Korunması Hakkında Kanun kapsamında cayma hakkı bulunmamaktadır.
             </p>
 
             <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-4">1. İade Hakkı</h2>
             <p className="text-gray-700 mb-4">
-              Premium üyelik satın alan kullanıcılarımız:
+              Premium üyelik satın alan kullanıcılarımız, dijital bir ürün ve hizmet sunduğumuz için 6502 Sayılı Tüketicinin Korunması Hakkında Kanun kapsamında cayma hakkına sahip değildir. Bu nedenle, satın alma işleminden sonra iade talebi yapılamaz.
             </p>
-            <ul className="list-disc pl-6 text-gray-700 mb-4">
-              <li>Satın alma tarihinden itibaren 7 gün içinde herhangi bir sebep göstermeksizin iade talep edebilir</li>
-              <li>İade talebi onaylandıktan sonra ödeme 14 iş günü içinde iade edilir</li>
-              <li>İade süreci boyunca premium özelliklere erişim devam eder</li>
-            </ul>
 
             <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-4">2. İade Talep Süreci</h2>
             <p className="text-gray-700 mb-4">
-              İade talebinde bulunmak için:
+              Dijital ürün ve hizmet sunduğumuz için iade talebi kabul edilmemektedir. Bu nedenle, abonelik ve ödeme sonrasında geri ödeme yapılması mümkün değildir.
             </p>
-            <ul className="list-disc pl-6 text-gray-700 mb-4">
-              <li>E-posta: mehmetirem305@gmail.com adresine talep gönderin</li>
-              <li>Telefon: 05456962060 numarasından bize ulaşın</li>
-              <li>Talep formunu doldurun (hesap ayarlarından ulaşabilirsiniz)</li>
-            </ul>
 
             <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-4">3. Abonelik İptali</h2>
             <p className="text-gray-700 mb-4">
-              Premium üyelik aboneliğinizi istediğiniz zaman iptal edebilirsiniz:
+              Dijital ürün olduğu için abonelik iptal edilmez. Premium üyelik aboneliğiniz, satın alma işleminden sonra aktif olur ve ödeme anında sağlanan hizmeti hemen alırsınız. Bu nedenle, abonelik iptali ve iade talebi kabul edilmez.
+            </p>
+
+            <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-4">4. Dijital Ürün Teslimi</h2>
+            <p className="text-gray-700 mb-4">
+              Premium üyelik satın alındığında:
             </p>
             <ul className="list-disc pl-6 text-gray-700 mb-4">
-              <li>Hesap ayarlarından "Aboneliği İptal Et" seçeneğini kullanın</li>
-              <li>Müşteri hizmetleri ile iletişime geçin</li>
-              <li>İptal işlemi mevcut dönemin sonunda gerçekleşir</li>
-              <li>İptal edilen abonelik dönem sonuna kadar aktif kalır</li>
+              <li>Ödeme sonrası anında erişim sağlanır</li>
+              <li>Hizmet dijital olarak teslim edilir</li>
+              <li>Tek seferlik ödeme ile kalıcı erişim sağlanır</li>
             </ul>
 
-            <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-4">4. Otomatik Yenileme</h2>
+            <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-4">5. İade ve İptal Politikası</h2>
             <p className="text-gray-700 mb-4">
-              Premium üyelik aboneliği otomatik olarak yenilenir:
+              Dijital ürün satışı yaptığımız için:
             </p>
             <ul className="list-disc pl-6 text-gray-700 mb-4">
-              <li>Her ay sonunda otomatik ödeme alınır</li>
-              <li>Ödeme günü öncesinde bilgilendirme e-postası gönderilir</li>
-              <li>Otomatik yenilemeyi istediğiniz zaman kapatabilirsiniz</li>
-            </ul>
-
-            <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-4">5. İade Edilemeyecek Durumlar</h2>
-            <p className="text-gray-700 mb-4">
-              Aşağıdaki durumlarda iade talebi kabul edilmeyebilir:
-            </p>
-            <ul className="list-disc pl-6 text-gray-700 mb-4">
-              <li>7 günlük cayma süresi geçtikten sonra</li>
-              <li>Hizmetin kötüye kullanımı tespit edildiğinde</li>
-              <li>Kullanım şartları ihlal edildiğinde</li>
+              <li>Satın alma sonrası iade yapılmaz</li>
+              <li>Abonelik iptali mümkün değildir</li>
+              <li>Anında teslimat sağlandığından cayma hakkı bulunmamaktadır</li>
             </ul>
 
             <h2 className="text-xl font-semibold text-purple-700 mt-6 mb-4">6. İletişim</h2>
             <p className="text-gray-700 mb-4">
               İade ve iptal işlemleri için bize ulaşın:
               <br />
-              Web site: https://www.mehmetgulhan.xyz/
+              Web site: https://analizore.netlify.app/
               <br />
               E-posta: mehmetirem305@gmail.com
               <br />

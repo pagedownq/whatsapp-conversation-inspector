@@ -154,20 +154,16 @@ const Pricing = () => {
               <Button
                 onClick={handlePayment}
                 disabled={loading}
-                className="w-full relative"
+                className="w-full relative bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-purple-900 border border-amber-300"
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
-                    <Crown className="h-4 w-4 mr-2 text-amber-500" />
+                    <Crown className="h-5 w-5 mr-2" />
                     Premium Üyelik Al
                   </>
                 )}
-                className="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-purple-900 border border-amber-300"
-              >
-                <Crown className="h-5 w-5 mr-2" />
-                Premium Üyelik Al
               </Button>
               
             </CardFooter>

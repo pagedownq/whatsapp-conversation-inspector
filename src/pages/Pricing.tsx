@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Crown, Check, ArrowLeft } from 'lucide-react';
+import { Crown, Check, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const FeatureItem = React.memo(({ feature, index }: { feature: string; index: number }) => (
   <motion.div
@@ -23,6 +24,60 @@ const FeatureItem = React.memo(({ feature, index }: { feature: string; index: nu
 
 const Pricing = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const status = searchParams.get('status');
+    if (status === 'success') {
+      toast({
+        title: 'Ödeme Başarılı',
+        description: 'Premium aboneliğiniz başarıyla aktifleştirildi.',
+        variant: 'success'
+      });
+    } else if (status === 'failed') {
+      toast({
+        title: 'Ödeme Başarısız',
+        description: 'Ödeme işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.',
+        variant: 'destructive'
+      });
+    }
+  }, [searchParams, toast]);
+
+  const handlePayment = async () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch('/.netlify/functions/create-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userId: user.id })
+      });
+
+      const data = await response.json();
+      if (data.iframe_url) {
+        window.location.href = data.iframe_url;
+      } else {
+        throw new Error(data.error || 'Ödeme başlatılamadı');
+      }
+    } catch (error) {
+      toast({
+        title: 'Hata',
+        description: 'Ödeme işlemi başlatılırken bir hata oluştu. Lütfen tekrar deneyin.',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const features = useMemo(() => [
     'Duygu Analizi ve Görselleştirme',
@@ -97,7 +152,18 @@ const Pricing = () => {
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button
-                onClick={() => navigate('/')}
+                onClick={handlePayment}
+                disabled={loading}
+                className="w-full relative"
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Crown className="h-4 w-4 mr-2 text-amber-500" />
+                    Premium Üyelik Al
+                  </>
+                )}
                 className="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-purple-900 border border-amber-300"
               >
                 <Crown className="h-5 w-5 mr-2" />

@@ -1,3 +1,4 @@
+
 import React, { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Crown, Check, ArrowLeft, Loader2 } from 'lucide-react';
@@ -69,6 +70,7 @@ const Pricing = () => {
         throw new Error(data.error || 'Ödeme başlatılamadı');
       }
     } catch (error) {
+      console.error('Ödeme hatası:', error);
       toast({
         title: 'Hata',
         description: 'Ödeme işlemi başlatılırken bir hata oluştu. Lütfen tekrar deneyin.',

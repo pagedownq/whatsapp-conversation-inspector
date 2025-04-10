@@ -17,7 +17,7 @@ export const exportAnalysisToCSV = (stats: ChatStats): ExportData => {
     `Toplam Mesaj,${stats.totalMessages}`,
     `Toplam Kelime,${stats.totalWords}`,
     `Toplam Emoji,${stats.totalEmojis}`,
-    `Toplam Medya,${stats.mediaStats.total || stats.mediaStats.images + stats.mediaStats.videos + stats.mediaStats.documents + stats.mediaStats.links + stats.mediaStats.stickers + stats.mediaStats.gifs + stats.mediaStats.audio}`,
+    `Toplam Medya,${stats.mediaStats.total || (stats.mediaStats.images + stats.mediaStats.videos + stats.mediaStats.documents + stats.mediaStats.links + stats.mediaStats.stickers + stats.mediaStats.gifs + stats.mediaStats.audio)}`,
     `Ortalama Mesaj Uzunluğu,${stats.totalWords / stats.totalMessages}`,
     `Başlangıç Tarihi,${stats.startDate}`,
     `Bitiş Tarihi,${stats.endDate}`,
@@ -44,7 +44,7 @@ export const exportAnalysisToCSV = (stats: ChatStats): ExportData => {
     data.messageCount,
     data.wordCount,
     data.emojiCount,
-    data.averageMessageLength,
+    data.wordCount / data.messageCount, // Ortalama mesaj uzunluğu
     data.mediaStats.images,
     data.mediaStats.videos,
     data.mediaStats.documents,
@@ -101,14 +101,16 @@ export const exportAnalysisToCSV = (stats: ChatStats): ExportData => {
     'Katılımcı',
   ].join(',');
 
-  // Kelime analizinde hata düzeltme: topWords yerine freqeuntWords kullanıyoruz
-  const wordRows = Object.entries(stats.participantStats).flatMap(([name, data]) =>
-    (data.frequentWords || []).slice(0, 10).map(word => [
+  // Sık kullanılan kelimeleri almak için topWords veya sık kullanılan kelimelere erişim
+  const wordRows = Object.entries(stats.participantStats).flatMap(([name, data]) => {
+    // data.frequentWords ya da data.topWords olmayabilir, kontrol ediyoruz
+    const words = data.topWords || [];
+    return words.slice(0, 10).map(word => [
       word.text,
       word.count,
       name,
-    ].join(','))
-  );
+    ].join(','));
+  });
 
   const wordAnalysis = [wordHeaders, ...wordRows].join('\n');
 

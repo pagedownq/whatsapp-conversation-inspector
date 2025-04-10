@@ -26,8 +26,6 @@ export const handlePayTRWebhook = async (data: PayTRWebhookData) => {
       throw new Error('Invalid hash');
     }
 
-    const { merchant_oid, status, total_amount } = data;
-
     // Ödeme durumunu kontrol et
     if (status === 'success') {
       // Başarılı ödeme durumunda aboneliği aktifleştir

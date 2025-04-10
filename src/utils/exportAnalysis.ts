@@ -101,8 +101,9 @@ export const exportAnalysisToCSV = (stats: ChatStats): ExportData => {
     'Katılımcı',
   ].join(',');
 
+  // Kelime analizinde hata düzeltme: topWords yerine freqeuntWords kullanıyoruz
   const wordRows = Object.entries(stats.participantStats).flatMap(([name, data]) =>
-    data.topWords.slice(0, 10).map(word => [
+    (data.frequentWords || []).slice(0, 10).map(word => [
       word.text,
       word.count,
       name,

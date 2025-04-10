@@ -1,12 +1,15 @@
+
 import { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 import { PayTRService } from '../../../src/integrations/paytr/service';
 import { PayTRNotifyRequest } from '../../../src/integrations/paytr/types';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+// Supabase URL ve key'i doğrudan alıyoruz
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+// Supabase client'ı oluştururken URL ve key'i doğrudan belirtiyoruz
+const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
 const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {

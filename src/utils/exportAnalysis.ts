@@ -1,3 +1,4 @@
+
 import { ChatStats, ParticipantStats } from './analyzeChat';
 import { getManipulationTypeLabel } from './sentimentAnalysis';
 
@@ -16,8 +17,8 @@ export const exportAnalysisToCSV = (stats: ChatStats): ExportData => {
     `Toplam Mesaj,${stats.totalMessages}`,
     `Toplam Kelime,${stats.totalWords}`,
     `Toplam Emoji,${stats.totalEmojis}`,
-    `Toplam Medya,${stats.totalMedia}`,
-    `Ortalama Mesaj Uzunluğu,${stats.averageMessageLength}`,
+    `Toplam Medya,${stats.mediaStats.total || stats.mediaStats.images + stats.mediaStats.videos + stats.mediaStats.documents + stats.mediaStats.links + stats.mediaStats.stickers + stats.mediaStats.gifs + stats.mediaStats.audio}`,
+    `Ortalama Mesaj Uzunluğu,${stats.totalWords / stats.totalMessages}`,
     `Başlangıç Tarihi,${stats.startDate}`,
     `Bitiş Tarihi,${stats.endDate}`,
   ].join('\n');
@@ -101,7 +102,7 @@ export const exportAnalysisToCSV = (stats: ChatStats): ExportData => {
   ].join(',');
 
   const wordRows = Object.entries(stats.participantStats).flatMap(([name, data]) =>
-    data.frequentWords.slice(0, 10).map(word => [
+    data.topWords.slice(0, 10).map(word => [
       word.text,
       word.count,
       name,

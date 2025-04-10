@@ -1,4 +1,3 @@
-
 import React, { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Crown, Check, ArrowLeft, Loader2 } from 'lucide-react';
@@ -36,7 +35,7 @@ const Pricing = () => {
       toast({
         title: 'Ödeme Başarılı',
         description: 'Premium aboneliğiniz başarıyla aktifleştirildi.',
-        variant: 'success'
+        variant: 'default'
       });
     } else if (status === 'failed') {
       toast({

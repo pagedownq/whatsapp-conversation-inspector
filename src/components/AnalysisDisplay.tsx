@@ -68,7 +68,7 @@ const MediaStatsCard: React.FC<{
 
 const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) => {
   const [stats, setStats] = useState<ChatStats | null>(null);
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'participants' | 'timeline' | 'media' | 'conversation' | 'sentiment' | 'relationship'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'participants' | 'timeline' | 'media' | 'conversation' | 'sentiment' | 'relationship' | 'whatsapp'>('overview');
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
   const [participantColors, setParticipantColors] = useState<Record<string, string>>({});
   const isMobile = useIsMobile();
@@ -203,8 +203,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
       )}
       
       <div className="flex flex-wrap gap-2 mb-6">
-
-
         {[
           { id: 'overview', icon: <BarChart2 className="h-4 w-4" />, label: 'Genel', color: 'from-blue-500/20 to-indigo-600/20' },
           { id: 'participants', icon: <User className="h-4 w-4" />, label: 'Kişiler', color: 'from-emerald-500/20 to-teal-600/20' },
@@ -217,7 +215,7 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ chatData, onReset }) 
         ].map(tab => (
           <button
             key={tab.id}
-            onClick={() => setSelectedTab(tab.id)}
+            onClick={() => setSelectedTab(tab.id as typeof selectedTab)}
             className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all text-sm ${tab.color ? `bg-gradient-to-br ${tab.color} backdrop-blur-sm border border-primary/20 hover:border-primary/30 hover:shadow-lg hover:scale-105 hover:brightness-110` : selectedTab === tab.id
                 ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
                 : 'bg-secondary/50 hover:bg-secondary/70'

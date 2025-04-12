@@ -1,8 +1,9 @@
 
 import { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
+import { handlePaymentCallback, CallbackParams } from '../../../src/integrations/paytr';
 
-// Supabase istemcisini oluştur
+// Supabase istemcisini doğru şekilde oluştur
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -11,6 +12,7 @@ if (!supabaseUrl || !supabaseServiceRoleKey) {
   throw new Error("Supabase configuration missing");
 }
 
+// Supabase client'ı oluştururken URL ve key'i doğrudan belirtiyoruz
 const supabase = createClient(
   supabaseUrl,
   supabaseServiceRoleKey
@@ -33,33 +35,39 @@ const handler: Handler = async (event) => {
     
     console.log('Received PayTR notification:', notifyParams);
 
-    // Basit hash kontrolü
-    if (!validatePaytrNotification(notifyParams)) {
-      console.error('PayTR notification validation failed');
+    let callbackData;
+    try {
+      callbackData = handlePaymentCallback(notifyParams);
+    } catch (error) {
+      console.error('PayTR callback validation error:', error);
       return {
         statusCode: 400,
         body: 'PAYTR notification validation failed'
       };
     }
 
-    // merchant_oid'den user_id'yi çıkar
-    const merchant_oid = notifyParams.merchant_oid;
-    const userId = merchant_oid?.split('_')[0];
-    
-    if (!userId) {
-      throw new Error('Invalid merchant_oid format');
+    if (!callbackData) {
+      return {
+        statusCode: 400,
+        body: 'PAYTR notification validation failed'
+      };
     }
 
-    // Ödeme durumunu güncelle
+    // Ödeme kaydını güncelle
+    const userId = callbackData.callback_id?.split('_')[0];
+    if (!userId) {
+      throw new Error('Invalid callback_id format');
+    }
+
     const { error: paymentError } = await supabase
       .from('payments')
       .update({
-        status: notifyParams.status,
-        payment_type: notifyParams.payment_type || 'premium',
-        payment_response: notifyParams,
+        status: callbackData.status,
+        total_amount: callbackData.total_amount,
+        payment_type: callbackData.payment_type,
         updated_at: new Date().toISOString()
       })
-      .eq('merchant_oid', merchant_oid);
+      .eq('merchant_oid', callbackData.callback_id);
 
     if (paymentError) {
       console.error('Payment update error:', paymentError);
@@ -69,8 +77,12 @@ const handler: Handler = async (event) => {
       };
     }
 
-    // Başarılı ödeme durumunda abonelik oluştur
-    if (notifyParams.status === 'success') {
+    if (callbackData.status === 'success') {
+      // Premium aboneliği aktifleştir
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + 30); // 30 günlük abonelik
+
       // Önce mevcut aktif aboneliği devre dışı bırak
       const { error: deactivateError } = await supabase
         .from('subscriptions')
@@ -81,11 +93,6 @@ const handler: Handler = async (event) => {
       if (deactivateError) {
         console.error('Error deactivating existing subscription:', deactivateError);
       }
-
-      // Yeni abonelik oluştur
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + 30); // 30 günlük abonelik
 
       const { error: subscriptionError } = await supabase
         .from('subscriptions')
@@ -98,10 +105,10 @@ const handler: Handler = async (event) => {
         });
 
       if (subscriptionError) {
-        console.error('Subscription creation error:', subscriptionError);
+        console.error('Subscription update error:', subscriptionError);
         return {
           statusCode: 500,
-          body: 'Subscription creation failed'
+          body: 'Subscription update failed'
         };
       }
     }
@@ -113,22 +120,11 @@ const handler: Handler = async (event) => {
     };
   } catch (error) {
     console.error('PayTR notification error:', error);
-    // PayTR için hata durumunda da OK döndürelim ki tekrar denemesin
     return {
-      statusCode: 200,
+      statusCode: 200, // PayTR için hata durumunda da 200 döndürelim ki tekrar denemesin
       body: 'OK'
     };
   }
 };
-
-// PayTR bildirimlerini doğrulama fonksiyonu
-function validatePaytrNotification(params: Record<string, any>): boolean {
-  // PayTR'den gelen bildirim yapısının temel kontrolü
-  // Bu basit kontrol için minimum alanları kontrol edelim
-  return (
-    params.merchant_oid &&
-    (params.status === 'success' || params.status === 'failed')
-  );
-}
 
 export { handler };

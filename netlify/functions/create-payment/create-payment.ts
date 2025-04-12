@@ -1,3 +1,4 @@
+
 import { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 import { createPaymentLink, CreateLinkParams, PayTRLinkResponse } from '../../../src/integrations/paytr';
@@ -39,9 +40,39 @@ const handler: Handler = async (event) => {
       };
     }
 
-        const merchantOid = `${userId}_${Date.now()}`;
+    const merchantOid = `${userId}_${Date.now()}`;
     const paymentAmount = 99.00; // 99.00 TL
 
+    // Doğrudan PayTR sabit linki kullanma konfigürasyonu:
+    // Bu ayarları değiştirirseniz statik olarak https://www.paytr.com/link/ANDPOpo kullanacak
+    const useStaticPaytrLink = true;
+    const staticPaytrLink = "https://www.paytr.com/link/ANDPOpo";
+
+    // Eğer statik link kullanıyorsak, hızlıca döndür
+    if (useStaticPaytrLink) {
+      // Ödeme kaydını oluştur
+      const { error: paymentError } = await supabase.from('payments').insert({
+        user_id: userId,
+        merchant_oid: merchantOid,
+        amount: paymentAmount,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      });
+
+      if (paymentError) {
+        console.error('Payment record creation error:', paymentError);
+      }
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          payment_link: staticPaytrLink,
+          merchant_oid: merchantOid
+        })
+      };
+    }
+
+    // Eğer dinamik PayTR API kullanacaksak buradan devam eder:
     const paymentParams: CreateLinkParams = {
       name: 'Premium Abonelik',
       price: paymentAmount,

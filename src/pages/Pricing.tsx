@@ -1,3 +1,4 @@
+
 import React, { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Crown, Check, ArrowLeft, Loader2 } from 'lucide-react';
@@ -54,6 +55,12 @@ const Pricing = () => {
 
     setLoading(true);
     try {
+      // Test için doğrudan PayTR link sayfasına yönlendirme
+      window.location.href = "https://www.paytr.com/link/ANDPOpo";
+      return; // Doğrudan yönlendirme yapıyoruz
+      
+      // Alttaki kısım şu an kullanılmıyor, doğrudan yönlendirme yapıyoruz
+      /*
       const response = await fetch('/.netlify/functions/create-payment', {
         method: 'POST',
         headers: {
@@ -63,11 +70,12 @@ const Pricing = () => {
       });
 
       const data = await response.json();
-      if (data.iframe_url) {
-        window.location.href = data.iframe_url;
+      if (data.payment_link) {
+        window.location.href = data.payment_link;
       } else {
         throw new Error(data.error || 'Ödeme başlatılamadı');
       }
+      */
     } catch (error) {
       console.error('Ödeme hatası:', error);
       toast({

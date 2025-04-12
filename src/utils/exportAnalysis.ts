@@ -1,152 +1,73 @@
+import { ChatData, ChatStats, ParticipantStats } from "@/types";
+import { exportWordCloudData } from "./wordCloudUtils";
 
-import { ChatStats, ParticipantStats } from './analyzeChat';
-import { getManipulationTypeLabel } from './sentimentAnalysis';
-
-interface ExportData {
-  generalStats: string;
-  participantStats: string;
-  sentimentAnalysis: string;
-  relationshipAnalysis: string;
-  wordAnalysis: string;
-}
-
-export const exportAnalysisToCSV = (stats: ChatStats): ExportData => {
-  // Genel İstatistikler
-  const generalStats = [
-    'Metrik,Değer',
-    `Toplam Mesaj,${stats.totalMessages}`,
-    `Toplam Kelime,${stats.totalWords}`,
-    `Toplam Emoji,${stats.totalEmojis}`,
-    `Toplam Medya,${stats.mediaStats.total || (stats.mediaStats.images + stats.mediaStats.videos + stats.mediaStats.documents + stats.mediaStats.links + stats.mediaStats.stickers + stats.mediaStats.gifs + stats.mediaStats.audio)}`,
-    `Ortalama Mesaj Uzunluğu,${stats.totalWords / stats.totalMessages}`,
-    `Başlangıç Tarihi,${stats.startDate}`,
-    `Bitiş Tarihi,${stats.endDate}`,
-  ].join('\n');
-
-  // Katılımcı İstatistikleri
-  const participantHeaders = [
-    'Katılımcı',
-    'Mesaj Sayısı',
-    'Kelime Sayısı',
-    'Emoji Sayısı',
-    'Ortalama Mesaj Uzunluğu',
-    'Fotoğraf',
-    'Video',
-    'Belge',
-    'Link',
-    'Çıkartma',
-    'GIF',
-    'Ses',
-  ].join(',');
-
-  const participantRows = Object.entries(stats.participantStats).map(([name, data]) => [
-    name,
-    data.messageCount,
-    data.wordCount,
-    data.emojiCount,
-    data.wordCount / data.messageCount, // Ortalama mesaj uzunluğu
-    data.mediaStats.images,
-    data.mediaStats.videos,
-    data.mediaStats.documents,
-    data.mediaStats.links,
-    data.mediaStats.stickers,
-    data.mediaStats.gifs,
-    data.mediaStats.audio,
-  ].join(','));
-
-  const participantStats = [participantHeaders, ...participantRows].join('\n');
-
-  // Duygu Analizi
-  const sentimentHeaders = [
-    'Katılımcı',
-    'Ortalama Duygu Puanı',
-    'Pozitif Mesaj Sayısı',
-    'Negatif Mesaj Sayısı',
-    'Nötr Mesaj Sayısı',
-    'Manipülasyon Puanı',
-  ].join(',');
-
-  const sentimentRows = Object.entries(stats.participantStats).map(([name, data]) => [
-    name,
-    data.sentiment.averageScore,
-    data.sentiment.positiveMsgCount,
-    data.sentiment.negativeMsgCount,
-    data.sentiment.neutralMsgCount,
-    data.manipulation.averageScore,
-  ].join(','));
-
-  const sentimentAnalysis = [sentimentHeaders, ...sentimentRows].join('\n');
-
-  // İlişki Analizi
-  const relationshipHeaders = [
-    'Katılımcı',
-    'Sevgi İfadeleri',
-    'Seni Seviyorum Sayısı',
-    'Özür Dileme Sayısı',
-  ].join(',');
-
-  const relationshipRows = Object.entries(stats.participantStats).map(([name, data]) => [
-    name,
-    data.loveExpressions.count,
-    data.loveExpressions.iLoveYouCount,
-    data.apologies.count,
-  ].join(','));
-
-  const relationshipAnalysis = [relationshipHeaders, ...relationshipRows].join('\n');
-
-  // Kelime Analizi
-  const wordHeaders = [
-    'Kelime',
-    'Kullanım Sayısı',
-    'Katılımcı',
-  ].join(',');
-
-  // Sık kullanılan kelimeleri almak için topWords veya sık kullanılan kelimelere erişim
-  const wordRows = Object.entries(stats.participantStats).flatMap(([name, data]) => {
-    // data.frequentWords ya da data.topWords olmayabilir, kontrol ediyoruz
-    const words = data.topWords || [];
-    return words.slice(0, 10).map(word => [
-      word.text,
-      word.count,
-      name,
-    ].join(','));
-  });
-
-  const wordAnalysis = [wordHeaders, ...wordRows].join('\n');
-
-  return {
-    generalStats,
-    participantStats,
-    sentimentAnalysis,
-    relationshipAnalysis,
-    wordAnalysis,
-  };
-};
-
-export const downloadCSV = (data: ExportData) => {
-  const timestamp = new Date().toISOString().split('T')[0];
-  const fileName = `whatsapp-analiz-${timestamp}.csv`;
-
-  // Tüm bölümleri birleştir
-  const sections = [
-    '\n--- GENEL İSTATİSTİKLER ---\n',
-    data.generalStats,
-    '\n\n--- KATILIMCI İSTATİSTİKLERİ ---\n',
-    data.participantStats,
-    '\n\n--- DUYGU ANALİZİ ---\n',
-    data.sentimentAnalysis,
-    '\n\n--- İLİŞKİ ANALİZİ ---\n',
-    data.relationshipAnalysis,
-    '\n\n--- KELİME ANALİZİ ---\n',
-    data.wordAnalysis
+export function exportAnalysisToCSV(
+  chatData: ChatData,
+  stats: ChatStats,
+  participantStats: Record<string, ParticipantStats>,
+  uniqueParticipants: string[],
+  wordFrequencies: Record<string, { [word: string]: number }>
+): void {
+  const rows = [
+    ["Toplam Mesaj", stats.totalMessages.toString()],
+    ["Toplam Katılımcı", stats.totalParticipants.toString()],
+    ["İlk Mesaj Tarihi", stats.firstMessageDate?.toLocaleDateString() || "Bilinmiyor"],
+    ["Son Mesaj Tarihi", stats.lastMessageDate?.toLocaleDateString() || "Bilinmiyor"],
+    ["Toplam Medya", stats.mediaCount?.toString() || "0"],
+    ["Ortalama Mesaj Uzunluğu", stats.avgMessageLength?.toFixed(2) || "0"],
+    [""],
   ];
 
-  const combinedContent = sections.join('\n');
-  const blob = new Blob([`\uFEFF${combinedContent}`], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = fileName;
+  // Katılımcı istatistikleri
+  rows.push(["Katılımcı İstatistikleri"]);
+  rows.push(["Katılımcı", "Mesaj Sayısı", "Ortalama Mesaj Uzunluğu", "Emoji Sayısı", "Medya Sayısı"]);
+
+  uniqueParticipants.forEach((participant) => {
+    const participantStat = participantStats[participant];
+    if (!participantStat) return;
+
+    rows.push([
+      participant,
+      participantStat.messageCount.toString(),
+      (participantStat.totalCharacters / Math.max(1, participantStat.messageCount)).toFixed(2),
+      participantStat.emojiCount.toString(),
+      participantStat.mediaCount.toString(),
+    ]);
+  });
+
+  // Boş satır ekleyelim
+  rows.push([""]);
+
+  // En çok kullanılan kelimeler
+  rows.push(["En Çok Kullanılan Kelimeler"]);
+  uniqueParticipants.forEach((participant) => {
+    rows.push([participant]);
+    rows.push(["Kelime", "Frekans"]);
+
+    const participantWords = wordFrequencies[participant];
+    if (participantWords) {
+      const sortedWords = Object.entries(participantWords)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 20);
+
+      sortedWords.forEach(([word, frequency]) => {
+        rows.push([word, frequency.toString()]);
+      });
+    }
+    rows.push([""]);
+  });
+
+  // CSV formatına dönüştür
+  const csvContent =
+    "data:text/csv;charset=utf-8," +
+    rows.map((row) => row.join(",")).join("\n");
+
+  // İndir
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "whatsapp_analiz.csv");
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-};
+}

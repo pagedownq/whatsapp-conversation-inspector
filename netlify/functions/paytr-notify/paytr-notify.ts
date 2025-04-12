@@ -3,12 +3,19 @@ import { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 import { handlePaymentCallback, CallbackParams } from '../../../src/integrations/paytr';
 
-// Supabase URL ve key'i doğrudan alıyoruz
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+// Supabase istemcisini doğru şekilde oluştur
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceRoleKey) {
+  console.error("Supabase configuration missing");
+}
 
 // Supabase client'ı oluştururken URL ve key'i doğrudan belirtiyoruz
-const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+const supabase = createClient(
+  supabaseUrl || '',
+  supabaseServiceRoleKey || ''
+);
 
 const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -79,7 +86,7 @@ const handler: Handler = async (event) => {
           started_at: startDate.toISOString(),
           expires_at: endDate.toISOString(),
           is_active: true,
-          payment_id: notifyParams.merchant_oid
+          payment_id: callbackData.merchant_oid
         });
 
       if (subscriptionError) {

@@ -1,0 +1,77 @@
+1) CREATE (OLUŞTURMA) SERVİSİ
+Create servisi ile Hizmet/Ürün veya Fatura/Cari tahsilatlarınız için ödeme linkleri oluşturabilirsiniz.
+1- Aşağıdaki gönderilmesi zorunlu olan bilgiler iletildikten sonra bir token verisi üretilir.
+2- Oluşan token ve gönderilmesi zorunlu olan alanlarla birlikte https://www.paytr.com/odeme/api/link/create
+servisine istekte bulunulur.
+Link oluşturma işlemi için gerekli parametreler
+Zorunlu Açıklama Alan adı / tipi Kısıtlar
+✓ Mağaza No: PayTR tarafından size verilen 
+Mağaza numarası 
+merchant_id (integer) 
+✓ Ürün veya hizmet adı name (string) Ürün / Hizmetin açıklaması. En az 
+4 en fazla 200 karakter.
+✓ Ödeme tutarı price (integer) 
+14.45 TL için 14.45 * 100 = 1445 
+(100 ile çarpılmış ve integer olarak 
+gönderilmelidir.)
+✓ Para birimi currency(string) TL, EUR, USD, GBP, RUB (Boş ise 
+TL kabul edilir)
+✓
+En fazla taksit sayısı: Gösterilecek en fazla taksit 
+sayısını belirler (Örn. kuyum harcamalarında en 
+fazla 4 taksit uygulaması vardır)
+max_installment (int) 2 – 12 arası gönderilebilir. 1 
+gönderilirse bireysel kartlarla
+taksitli işlem yapılamaz.
+✓ Ödeme sürecinde sayfalarda kullanılacak dil lang (string) Türkçe için tr veya İngilizce için en
+(Boş gönderilirse tr geçerli olur)
+✓ Link tipi link_type (string) Ürün hizmet satışı için: product
+Fatura/Cari tahsilat için: collection
+✓
+paytr_token: İsteğin sizden geldiğine ve içeriğin 
+değişmediğine emin olmamız için 
+oluşturacağınız değerdir.
+paytr_token (string) Hesaplama ile ilgili olarak örnek 
+kodlara bakmalısınız
+Alt adet limiti 
+(Link tipi product ise zorunlu) min_count (integer) En az 1 olabilir.
+Eposta adresi
+(Link tipi collection ise zorunlu) email (string) En fazla 100 karakter
+Stok adedi
+(Yalnızca product tipinde kullanılabilir. Link'in 
+stok adedini belirler ve gönderilmezse stok 
+limiti uygulanmaz. Stok adedi kadar ödeme 
+yapıldığında link pasif olur)
+max_count (integer) En az 1 olabilir.
+Peşin Fiyatına Taksit ayarı (isteğe bağlı).
+Gönderilen en yüksek sayıya kadar olan tüm 
+taksit seçenekleri Peşin Fiyatına Taksit olarak 
+ayarlanır.
+DİKKAT: Peşin Fiyatına Taksit olarak 
+belirlediğiniz taksit sayıları için yapılan tüm
+ödeme işlemlerinde, taksit komisyonları sizden 
+kesilecektir.
+pft (integer) 2-12 arasındaki değerleri alabilir.
+Linkin son kullanma tarihi expiry_date
+Ödeme Link'inin son kullanma 
+tarihi. Gönderilmezse, sürekli açık 
+kalır. Örnek Format: “2021-05-31 
+17:00:00”
+Sayfa 3 / 3
+Ödeme sonucunun gönderileceği URL callback_link
+http:// ya da https:// ile başlamalı, 
+localhost olmamalı ve port 
+içermemelidir.
+Bildirimde dönülecek ID
+(callback_link gönderildiğinde bu alanında 
+gönderilmesi zorunludur.)
+callback_id Alfanumerik ve en fazla 64
+karakter olabilir.
+Hata mesajı (Entegrasyon ve test sürecinde 
+hataları tespit etmek için 1 gönderin) debug_on 0 veya 1
+2) DÖNEN DEĞERLER 
+Açıklama Alan adı / tipi Değerler
+İstek sonucu status (string) success, error veya failed
+Benzersiz link tanımlayıcı id (string) Örnek: NB2Zlz3
+Link status (string) Örnek: https://www.paytr.com/link/NB2Zlz3
+İstek açıklaması (hata durumunda) reason (string) Örnek: Zorunlu alan degeri gecersiz veya

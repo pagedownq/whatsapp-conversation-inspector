@@ -1,0 +1,55 @@
+CALLBACK SERVİSİ
+Oluşturduğunuz ödeme linki üzerinden yalnızca başarılı bir ödeme yapıldığında, Create servisinde o link için göndermiş 
+olduğunuz callbak_url’e işlem sonucu bildirilir.
+BİLGİ: Eğer Create servisinde callbak_url belirlemediyseniz veya belirlemek istemiyorsanız, bu entegrasyonu yapmanız 
+gerek yoktur.
+DİKKAT: Bu servis yalnızca Create servisinde gönderdiğiniz linkin eğer varsa callback_url’ine istek atar. Mağaza Paneli 
+içerisinde Bildirim URL kısmı ile hiçbir bağlantısı bulunmamaktadır.
+* PayTR sistemince link için tanımladığınız Bildirim URL’nize POST REQUEST içeriğinde gönderilecek değerler:
+Bildirim URL’nize PayTR sistemince yapılacak isteğe dönülmesi gereken yanıt (RESPONSE) text (düz yazı) formatında 
+ve yalnızca OK değeri olmalıdır.
+- Örnek (PHP): echo "OK";
+- Örnek (.NET): Response.Write("OK");
+ÖNEMLİ UYARILAR: 
+1. Bildirim URL adresinize üye girişi ve benzeri erişim kısıtlaması yapılmamalıdır. Böylece PayTR sistemi bildirimleri 
+kolayca iletebilecektir. 
+2. Bildirim URL’nize gelecek bildirimlere döneceğiniz OK yanıtının öncesinde veya sonrasında HTML veya herhangi 
+başka bir içerik ekrana basılmamalıdır. 
+3. Bildirim URL’niz, müşterinizin ödeme sırasında ulaşacağı bir sayfa değildir, PayTR tarafından arka planda (serverside) ödeme sonucunu bildirmek için kullanılır. Bu nedenle, Bildirim URL’nizde kodlama yaparken oturum 
+(SESSION) değerlerini kullanamazsınız.
+4. OK yanıtı alınmayan bildirimlerde, ilgili sipariş Mağaza Paneli'ndeki İşlemler sayfasında “Devam Ediyor” olarak 
+görünecektir. 
+Alan adı Açıklama
+hash PayTR sisteminden gönderilen değerlerin doğruluğunu kontrol etmeniz için güvenlik amaçlı oluşturulan 
+hash değeri (Hesaplama ile ilgili olarak örnek kodlara bakmalısınız)
+merchant_oid PayTR tarafından oluşturulan sipariş referans numarası.
+status Başarılı ödeme sonucunda success değeri döner (Link API'de başarısız ödemeler için bildirim yapılmaz).
+total_amount
+Müşteriden tahsil edilen toplam tutar.
+(100 ile çarpılmış hali gönderilir. 34.56 => 3456)
+(Not: Müşteri vade farklı taksit seçtiği vb. durumlarda, 1. ADIM’da gönderdiğiniz “payment_amount” 
+değerinden daha yüksek olabilir)
+payment_amount Sipariş tutarı: 1. ADIM’da gönderdiğiniz “payment_amount” değeridir.
+(100 ile çarpılmış hali gönderilir. 34.56 => 3456)
+payment_type Müşterinin hangi ödeme şekli ile ödemesini tamamladığını belirtir. Örn. card, bex vb. değerleri alır.
+currency Para birimi: Ödemenin hangi para birimi üzerinden yapıldığını belirtir. TL, USD, EUR, GBP, RUB 
+değerlerinden birini alır.
+callback_id Link oluşturmada (create) ilettiğiniz callbak_id bilgisi.
+merchant_id PayTR mağaza numaranız.
+test_mode Mağazanız test modunda iken veya canlı modda yapılan test işlemlerde 1 olarak gönderilir.
+Sayfa 3 / 3
+5. PayTR sistemi, Bildirim URL’nizden OK cevabını istendiği şekilde almadığı durumda, bildirimin başarısız olduğunu 
+varsayar. Ağ trafik sorunları, sitenizdeki anlık yoğunluklar ve benzeri nedenlerden dolayı aynı ödeme işlemi için 
+birden fazla bildirim ulaşabilir. Bu nedenle, bildirimin birden fazla geldiği durumlarda, yalnızca ilk bildirim göz 
+önünde bulundurulmalı, sonraki bildirimler için müşteriye tekrar ürün/hizmet sunulmamalıdır. Tekrarlayan 
+bildirimlerde yalnızca OK yanıtı ile süreç sonlandırılmalıdır. Tekrarlayan bildirimlerin tespiti merchant_oid temel 
+alınarak yapılmalıdır.
+6. Bildirimin PayTR sisteminden geldiğinden ve ulaşım esnasında değiştirilmediğinden emin olmak için, POST 
+içerisindeki hash değeri ile tarafınızca oluşturulacak hash değerinin aynı olduğunu kontrol etmeniz, güvenlik 
+açısından büyük önem arz etmektedir. Bu kontrolü yapmamanız durumunda maddi kayıplar ile karşılaşabilirsiniz.
+Yukarıdaki açıklamalara uygun olarak Bildirim URL’nizi hazırladıysanız, kontrol için bir adet test ödemesi 
+gerçekleştirmelisiniz. Eğer yaptığınız test işlem PayTR Mağaza Paneli’nizdeki İşlemler sayfasında “Başarılı” olarak 
+görünürse PayTR entegrasyonunuz tümüyle tamamlanmıştır. 
+Eğer işlemin durumu “Devam Ediyor” olarak görünüyorsa Bildirim URL’nizden “OK” yanıtı alınamıyor demektir. İşlemler
+sayfasında yaptığınız test işleminin satırında “Detay” linkine tıklayıp, Bildirim URL’nizden hangi yanıt geldiğini kontrol 
+edin

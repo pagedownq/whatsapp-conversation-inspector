@@ -1,8 +1,7 @@
 
 import { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
-import { PayTRService } from '../../../src/integrations/paytr/service';
-import { PayTRNotifyRequest } from '../../../src/integrations/paytr/types';
+import { handlePaymentCallback, CallbackParams } from '../../../src/integrations/paytr';
 
 // Supabase URL ve key'i doğrudan alıyoruz
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -21,18 +20,23 @@ const handler: Handler = async (event) => {
 
   try {
     const params = new URLSearchParams(event.body || '');
-    const notifyParams: PayTRNotifyRequest = {
-      merchant_oid: params.get('merchant_oid') || '',
-      status: params.get('status') || '',
-      total_amount: params.get('total_amount') || '',
-      hash: params.get('hash') || '',
-      test_mode: params.get('test_mode') || ''
-    };
+    const notifyParams: Record<string, any> = {};
+    params.forEach((value, key) => {
+      notifyParams[key] = value;
+    });
 
-    const paytrService = new PayTRService();
-    const isValid = paytrService.validateNotification(notifyParams);
+    let callbackData;
+    try {
+      callbackData = handlePaymentCallback(notifyParams);
+    } catch (error) {
+      console.error('PayTR callback validation error:', error);
+      return {
+        statusCode: 400,
+        body: 'PAYTR notification validation failed'
+      };
+    }
 
-    if (!isValid) {
+    if (!callbackData) {
       return {
         statusCode: 400,
         body: 'PAYTR notification validation failed'
@@ -40,11 +44,19 @@ const handler: Handler = async (event) => {
     }
 
     // Ödeme kaydını güncelle
-    const userId = notifyParams.merchant_oid.split('_')[0];
+    const userId = callbackData.callback_id?.split('_')[0];
+    if (!userId) {
+      throw new Error('Invalid callback_id format');
+    }
+
     const { error: paymentError } = await supabase
       .from('payments')
-      .update({ status: notifyParams.status })
-      .eq('merchant_oid', notifyParams.merchant_oid);
+      .update({
+        status: callbackData.status,
+        total_amount: callbackData.total_amount,
+        payment_type: callbackData.payment_type
+      })
+      .eq('merchant_oid', callbackData.callback_id);
 
     if (paymentError) {
       console.error('Payment update error:', paymentError);
@@ -54,7 +66,7 @@ const handler: Handler = async (event) => {
       };
     }
 
-    if (notifyParams.status === 'success') {
+    if (callbackData.status === 'success') {
       // Premium aboneliği aktifleştir
       const startDate = new Date();
       const endDate = new Date();

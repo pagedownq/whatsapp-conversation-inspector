@@ -1,0 +1,23 @@
+1) DELETE SERVİSİ
+Delete servisi ile daha önce oluşturmuş olduğunuz ödeme linklerini silebilirsiniz.
+1- Aşağıdaki gönderilmesi zorunlu olan bilgiler iletildikten sonra bir token verisi üretilir.
+2- Oluşan token ve gönderilmesi zorunlu olan alanlarla birlikte https://www.paytr.com/odeme/api/link/delete
+servisine istekte bulunulur.
+Link silme işlemi için gerekli parametreler
+Zorunlu Açıklama Alan adı / tipi Kısıtlar
+✓ Mağaza No: PayTR tarafından size verilen Mağaza numarası merchant_id 
+(integer) 
+✓ ID: Create metodunda dönülen değerdir. id (integer)
+✓ paytr_token: İsteğin sizden geldiğine ve içeriğin değişmediğine 
+emin olmamız için oluşturacağınız değerdir.
+paytr_token 
+(string)
+Hesaplama ile ilgili 
+olarak örnek kodlara 
+bakmalısınız
+Hata mesajı (Entegrasyon ve test sürecinde hataları tespit 
+etmek için 1 gönderin) debug_on 0 veya 1
+2) DÖNEN DEĞERLER 
+Açıklama Alan adı / tipi Değerler
+İstek sonucu status (string) success, error veya failed
+İstek açıklaması (hata durumunda) reason (string) Örnek: Gecersiz id ya da link zaten

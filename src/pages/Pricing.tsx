@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const FeatureItem = React.memo(({ feature, index }: { feature: string; index: number }) => (
   <motion.div
@@ -25,27 +26,45 @@ const FeatureItem = React.memo(({ feature, index }: { feature: string; index: nu
 
 const Pricing = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshSubscription } = useAuth();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
 
+  // Ödeme işlemi sonrası durum kontrolü
   useEffect(() => {
-    const status = searchParams.get('status');
-    if (status === 'success') {
-      toast({
-        title: 'Ödeme Başarılı',
-        description: 'Premium aboneliğiniz başarıyla aktifleştirildi.',
-        variant: 'default'
-      });
-    } else if (status === 'failed') {
-      toast({
-        title: 'Ödeme Başarısız',
-        description: 'Ödeme işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.',
-        variant: 'destructive'
-      });
-    }
-  }, [searchParams, toast]);
+    const checkPaymentStatus = async () => {
+      const status = searchParams.get('status');
+      if (!status || !user) return;
+      
+      if (status === 'success') {
+        setLoading(true);
+        // Kullanıcının abonelik durumunu güncelleyelim
+        await refreshSubscription();
+        setLoading(false);
+        
+        toast({
+          title: 'Ödeme Başarılı',
+          description: 'Premium aboneliğiniz başarıyla aktifleştirildi.',
+          variant: 'default'
+        });
+        
+        // URL'den status parametresini temizleyelim
+        navigate('/pricing', { replace: true });
+      } else if (status === 'failed') {
+        toast({
+          title: 'Ödeme Başarısız',
+          description: 'Ödeme işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.',
+          variant: 'destructive'
+        });
+        
+        // URL'den status parametresini temizleyelim
+        navigate('/pricing', { replace: true });
+      }
+    };
+    
+    checkPaymentStatus();
+  }, [searchParams, toast, navigate, user, refreshSubscription]);
 
   const handlePayment = async () => {
     if (!user) {
@@ -55,27 +74,25 @@ const Pricing = () => {
 
     setLoading(true);
     try {
-      // Test için doğrudan PayTR link sayfasına yönlendirme
-      window.location.href = "https://www.paytr.com/link/ANDPOpo";
-      return; // Doğrudan yönlendirme yapıyoruz
+      // Ödeme kaydı oluşturma
+      const merchantOid = `${user.id}_${Date.now()}`;
       
-      // Alttaki kısım şu an kullanılmıyor, doğrudan yönlendirme yapıyoruz
-      /*
-      const response = await fetch('/.netlify/functions/create-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ userId: user.id })
+      const { error } = await supabase.from('payments').insert({
+        user_id: user.id,
+        merchant_oid: merchantOid,
+        amount: 4999, // 49.99 TL
+        status: 'pending'
       });
-
-      const data = await response.json();
-      if (data.payment_link) {
-        window.location.href = data.payment_link;
-      } else {
-        throw new Error(data.error || 'Ödeme başlatılamadı');
+      
+      if (error) {
+        throw error;
       }
-      */
+      
+      // PayTR link sayfasına yönlendirme (başarılı ve başarısız durumlar için geri dönüş URL'leri ile)
+      const currentUrl = window.location.origin;
+      // PayTR'ye gidecek URL'in sonuna dönüş parametreleri ekleniyor
+      window.location.href = `https://www.paytr.com/link/ANDPOpo?return_url=${encodeURIComponent(currentUrl + '/pricing?status=success')}&fail_url=${encodeURIComponent(currentUrl + '/pricing?status=failed')}`;
+      return;
     } catch (error) {
       console.error('Ödeme hatası:', error);
       toast({
@@ -97,12 +114,6 @@ const Pricing = () => {
     'Sınırsız Sohbet Analizi',
     'Öncelikli Destek'
   ], []);
-
-  const cardAnimation = useMemo(() => ({
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.4 }
-  }), []);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-amber-50 py-12 px-4 will-change-transform">
@@ -174,7 +185,6 @@ const Pricing = () => {
                   </>
                 )}
               </Button>
-              
             </CardFooter>
           </Card>
         </motion.div>

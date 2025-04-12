@@ -9,12 +9,13 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   console.error("Supabase configuration missing");
+  throw new Error("Supabase configuration missing");
 }
 
 // Supabase client'ı oluştururken URL ve key'i doğrudan belirtiyoruz
 const supabase = createClient(
-  supabaseUrl || '',
-  supabaseServiceRoleKey || ''
+  supabaseUrl,
+  supabaseServiceRoleKey
 );
 
 const handler: Handler = async (event) => {
@@ -31,6 +32,8 @@ const handler: Handler = async (event) => {
     params.forEach((value, key) => {
       notifyParams[key] = value;
     });
+    
+    console.log('Received PayTR notification:', notifyParams);
 
     let callbackData;
     try {
@@ -61,7 +64,8 @@ const handler: Handler = async (event) => {
       .update({
         status: callbackData.status,
         total_amount: callbackData.total_amount,
-        payment_type: callbackData.payment_type
+        payment_type: callbackData.payment_type,
+        updated_at: new Date().toISOString()
       })
       .eq('merchant_oid', callbackData.callback_id);
 
@@ -79,14 +83,25 @@ const handler: Handler = async (event) => {
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + 30); // 30 günlük abonelik
 
+      // Önce mevcut aktif aboneliği devre dışı bırak
+      const { error: deactivateError } = await supabase
+        .from('subscriptions')
+        .update({ is_active: false })
+        .eq('user_id', userId)
+        .eq('is_active', true);
+
+      if (deactivateError) {
+        console.error('Error deactivating existing subscription:', deactivateError);
+      }
+
       const { error: subscriptionError } = await supabase
         .from('subscriptions')
-        .upsert({
+        .insert({
           user_id: userId,
           started_at: startDate.toISOString(),
           expires_at: endDate.toISOString(),
           is_active: true,
-          payment_id: callbackData.merchant_oid
+          subscription_type: 'premium'
         });
 
       if (subscriptionError) {
@@ -98,6 +113,7 @@ const handler: Handler = async (event) => {
       }
     }
 
+    console.log('PayTR notification processed successfully');
     return {
       statusCode: 200,
       body: 'OK'
@@ -105,8 +121,8 @@ const handler: Handler = async (event) => {
   } catch (error) {
     console.error('PayTR notification error:', error);
     return {
-      statusCode: 500,
-      body: 'Internal server error'
+      statusCode: 200, // PayTR için hata durumunda da 200 döndürelim ki tekrar denemesin
+      body: 'OK'
     };
   }
 };

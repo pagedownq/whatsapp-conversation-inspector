@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 const FeatureItem = React.memo(({ feature, index }: { feature: string; index: number }) => (
   <motion.div
@@ -66,43 +65,14 @@ const Pricing = () => {
     checkPaymentStatus();
   }, [searchParams, toast, navigate, user, refreshSubscription]);
 
-  const handlePayment = async () => {
+  const handlePayment = () => {
     if (!user) {
       navigate('/auth');
       return;
     }
 
-    setLoading(true);
-    try {
-      // Ödeme kaydı oluşturma
-      const merchantOid = `${user.id}_${Date.now()}`;
-      
-      const { error } = await supabase.from('payments').insert({
-        user_id: user.id,
-        merchant_oid: merchantOid,
-        amount: 4999, // 49.99 TL
-        status: 'pending'
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      // PayTR link sayfasına yönlendirme (başarılı ve başarısız durumlar için geri dönüş URL'leri ile)
-      const currentUrl = window.location.origin;
-      // PayTR'ye gidecek URL'in sonuna dönüş parametreleri ekleniyor
-      window.location.href = `https://www.paytr.com/link/ANDPOpo?return_url=${encodeURIComponent(currentUrl + '/pricing?status=success')}&fail_url=${encodeURIComponent(currentUrl + '/pricing?status=failed')}`;
-      return;
-    } catch (error) {
-      console.error('Ödeme hatası:', error);
-      toast({
-        title: 'Hata',
-        description: 'Ödeme işlemi başlatılırken bir hata oluştu. Lütfen tekrar deneyin.',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
+    // Ödeme sayfasına yönlendir
+    navigate('/payment');
   };
 
   const features = useMemo(() => [
